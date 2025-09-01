@@ -2,9 +2,11 @@
 #include <zephyr/logging/log.h>
 #include <zephyr/net/socket.h>
 #include <zephyr/drivers/gpio.h>
+#include <zephyr/sys/clock.h>
 
 #include "wifi.h"
 #include "dns.h"
+#include "sntp.h"
 
 LOG_MODULE_REGISTER(MAIN);
 
@@ -139,19 +141,36 @@ int main(void) {
         return 0;
     }
 
-    k_tid_t my_tid1 = k_thread_create(&my_thread_data, my_stack_area,
-        K_THREAD_STACK_SIZEOF(my_stack_area),
-        bumbum_thread,
-        NULL, NULL, NULL,
-        MY_PRIORITY, 0, K_NO_WAIT);
+    // k_tid_t my_tid1 = k_thread_create(&my_thread_data, my_stack_area,
+    //     K_THREAD_STACK_SIZEOF(my_stack_area),
+    //     bumbum_thread,
+    //     NULL, NULL, NULL,
+    //     MY_PRIORITY, 0, K_NO_WAIT);
 
-    k_tid_t my_tid2 = k_thread_create(&my_thread_data2, my_stack_area2,
-        K_THREAD_STACK_SIZEOF(my_stack_area),
-        blink_thread,
-        NULL, NULL, NULL,
-        MY_PRIORITY, 0, K_NO_WAIT);
+    // k_tid_t my_tid2 = k_thread_create(&my_thread_data2, my_stack_area2,
+    //     K_THREAD_STACK_SIZEOF(my_stack_area),
+    //     blink_thread,
+    //     NULL, NULL, NULL,
+    //     MY_PRIORITY, 0, K_NO_WAIT);
 
-    k_sleep(K_SECONDS(61 * 60));
+    // k_sleep(K_SECONDS(61 * 60));
+
+    try_sync_time();
+
+    for (;;) {
+        struct timespec tp;
+        int err = sys_clock_gettime(SYS_CLOCK_REALTIME, &tp);
+        if (err) {
+            LOG_ERR("Failed to get time");
+            return 0;
+        }
+
+        uint32_t upt = k_uptime_seconds();
+
+        printf("Uptime: %d, real time: %s\n", upt, ctime(&tp.tv_sec));
+
+        k_msleep(1000);
+    }
 
     return 0;
 }
