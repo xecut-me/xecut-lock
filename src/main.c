@@ -4,6 +4,7 @@
 #include <zephyr/drivers/gpio.h>
 
 #include "wifi.h"
+#include "dns.h"
 
 LOG_MODULE_REGISTER(MAIN);
 
@@ -21,40 +22,11 @@ struct k_thread my_thread_data;
 K_THREAD_STACK_DEFINE(my_stack_area2, MY_STACK_SIZE);
 struct k_thread my_thread_data2;
 
-void print_addrinfo(struct zsock_addrinfo **results)
-{
-    char ipv4[INET_ADDRSTRLEN];
-    char ipv6[INET6_ADDRSTRLEN];
-    struct sockaddr_in *sa;
-    struct sockaddr_in6 *sa6;
-    struct zsock_addrinfo *rp;
-
-    // Iterate through the results
-    for (rp = *results; rp != NULL; rp = rp->ai_next) {
-
-        // Print IPv4 address
-        if (rp->ai_addr->sa_family == AF_INET) {
-            sa = (struct sockaddr_in *)rp->ai_addr;
-            zsock_inet_ntop(AF_INET, &sa->sin_addr, ipv4, INET_ADDRSTRLEN);
-            printk("IPv4: %s\r\n", ipv4);
-        }
-
-        // Print IPv6 address
-        if (rp->ai_addr->sa_family == AF_INET6) {
-            sa6 = (struct sockaddr_in6 *)rp->ai_addr;
-            zsock_inet_ntop(AF_INET6, &sa6->sin6_addr, ipv6, INET6_ADDRSTRLEN);
-            printk("IPv6: %s\r\n", ipv6);
-        }
-    }
-}
-
 void demo_request(void) {
 #define HTTP_HOST "example.com"
 #define HTTP_URL "/"
 
     char response[512];
-    struct zsock_addrinfo hints;
-    struct zsock_addrinfo *res;
     char http_request[512];
     int sock;
     int len;
@@ -68,32 +40,19 @@ void demo_request(void) {
              HTTP_URL,
              HTTP_HOST);
 
-    // Clear and set address info
-    memset(&hints, 0, sizeof(hints));
-    hints.ai_family = AF_INET;              // IPv4
-    hints.ai_socktype = SOCK_STREAM;        // TCP socket
-
-    // Perform DNS lookup
-    printk("Performing DNS lookup...\r\n");
-    ret = zsock_getaddrinfo(HTTP_HOST, "80", &hints, &res);
-    if (ret != 0) {
-        printk("Error (%d): Could not perform DNS lookup\r\n", ret);
-        printk("Errno %d", errno);
-        return;
-    }
-
-    // Print the results of the DNS lookup
-    print_addrinfo(&res);
+    struct sockaddr addr;
+    socklen_t addrlen;
+    dns_query(HTTP_HOST, 80, AF_INET, SOCK_STREAM, &addr, &addrlen);
 
     // Create a new socket
-    sock = zsock_socket(res->ai_family, res->ai_socktype, res->ai_protocol);
+    sock = zsock_socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
     if (sock < 0) {
         printk("Error (%d): Could not create socket\r\n", errno);
         return;
     }
 
     // Connect the socket
-    ret = zsock_connect(sock, res->ai_addr, res->ai_addrlen);
+    ret = zsock_connect(sock, &addr, addrlen);
     if (ret < 0) {
         printk("Error (%d): Could not connect the socket\r\n", errno);
         return;
