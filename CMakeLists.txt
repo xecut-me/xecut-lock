@@ -13,4 +13,5 @@ target_sources(
     src/dns.c
     src/sntp.c
     src/otp.c
+    src/keypad.c
 )
