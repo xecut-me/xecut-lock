@@ -12,4 +12,5 @@ target_sources(
     src/wifi.c
     src/dns.c
     src/sntp.c
+    src/otp.c
 )
