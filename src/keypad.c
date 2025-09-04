@@ -52,10 +52,6 @@ void keypad_init(
 enum keypad_status keypad_poll(struct keypad *kp) {
     uint8_t byte;
 
-    if (kp->buffer_len == KEYPAD_MAX_BUFFER_SIZE) {
-        return KEYPAD_STATUS_BUFFER_OVERFLOW;
-    }
-
     if (uart_poll_in(kp->device, &byte)) {
         return KEYPAD_STATUS_EMPTY_UART;
     }
@@ -115,6 +111,10 @@ static enum keypad_status keypad_handle_button(struct keypad *kp, uint8_t code) 
         case '0':
             if (kp->state == KEYPAD_STATE_RESET) {
                 kp->state = KEYPAD_STATE_UID_INPUT;
+            }
+
+            if (kp->buffer_len == KEYPAD_MAX_BUFFER_SIZE) {
+                return KEYPAD_STATUS_BUFFER_OVERFLOW;
             }
 
             kp->buffer[kp->buffer_len++] = code;
