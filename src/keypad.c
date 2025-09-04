@@ -21,11 +21,13 @@
 #define ASSERT_STATE(state, required_state) \
     __ASSERT((state) == required_state, "Required state is " #required_state " but keypad is in state %s", keypad_state_txt(state));
 
-static int  keypad_handle_button(struct keypad *kp, uint8_t code);
+static enum keypad_status keypad_handle_button(struct keypad *kp, uint8_t code);
 static void keypad_reset(struct keypad *kp);
-static int  keypad_handle_command(struct keypad *kp);
+static enum keypad_status keypad_next_state(struct keypad *kp);
+static enum keypad_status keypad_handle_command(struct keypad *kp);
 static void keypad_save_uid(struct keypad *kp);
-static int  keypad_verify_code(struct keypad *kp);
+static enum keypad_status keypad_verify_code(struct keypad *kp);
+static enum keypad_status keypad_save_digit(struct keypad *kp, uint8_t code);
 
 void keypad_init(
     const struct device *uart,
@@ -64,39 +66,20 @@ static enum keypad_status keypad_handle_button(struct keypad *kp, uint8_t code) 
         // Reset state
         case KEYPAD_BTN_CLEAR:
             keypad_reset(kp);
-            break;
+            return KEYPAD_STATUS_OK;
 
         // Special code
         case KEYPAD_BTN_POWER:
             if (kp->state == KEYPAD_STATE_RESET) {
                 kp->state = KEYPAD_STATE_COMMAND;
+                return KEYPAD_STATUS_OK;
             } else {
                 return KEYPAD_STATUS_INVALID_STATE;
             }
 
-            break;
-
         // Next state
         case KEYPAD_BTN_ENTER:
-            if (kp->buffer_len == 0) {
-                break;
-            }
-
-            if (kp->state == KEYPAD_STATE_COMMAND) {
-                return keypad_handle_command(kp);
-            }
-            else if (kp->state == KEYPAD_STATE_UID_INPUT) {
-                keypad_save_uid(kp);
-                kp->state = KEYPAD_STATE_CODE_INPUT;
-            }
-            else if (kp->state == KEYPAD_STATE_CODE_INPUT) {
-                return keypad_verify_code(kp);
-            }
-            else {
-                return KEYPAD_STATUS_INVALID_STATE;
-            }
-
-            break;
+            return keypad_next_state(kp);
 
         // Some numbers
         case '1':
@@ -109,16 +92,7 @@ static enum keypad_status keypad_handle_button(struct keypad *kp, uint8_t code) 
         case '8':
         case '9':
         case '0':
-            if (kp->state == KEYPAD_STATE_RESET) {
-                kp->state = KEYPAD_STATE_UID_INPUT;
-            }
-
-            if (kp->buffer_len == KEYPAD_MAX_BUFFER_SIZE) {
-                return KEYPAD_STATUS_BUFFER_OVERFLOW;
-            }
-
-            kp->buffer[kp->buffer_len++] = code;
-            break;
+            return keypad_save_digit(kp, code);
 
         // Unused buttons
         case KEYPAD_BTN_TBL:
@@ -128,7 +102,7 @@ static enum keypad_status keypad_handle_button(struct keypad *kp, uint8_t code) 
         case KEYPAD_BTN_STAY:
         case KEYPAD_BTN_SLEEP:
         case KEYPAD_BTN_ARM:
-            break;
+            return KEYPAD_STATUS_OK;
 
         // Someone connected via flipper and is trying to hack us!
         default:
@@ -148,6 +122,31 @@ static void keypad_reset(struct keypad *kp) {
     kp->uid_buffer_len = 0;
 }
 
+static enum keypad_status keypad_next_state(struct keypad *kp) {
+    enum keypad_status status = KEYPAD_STATUS_INVALID_STATE;
+
+    if (kp->buffer_len == 0) {
+        return status;
+    }
+
+    if (kp->state == KEYPAD_STATE_COMMAND) {
+        status = keypad_handle_command(kp);
+        keypad_reset(kp);
+    }
+    else if (kp->state == KEYPAD_STATE_UID_INPUT) {
+        keypad_save_uid(kp);
+        kp->state = KEYPAD_STATE_CODE_INPUT;
+
+        status = KEYPAD_STATUS_OK;
+    }
+    else if (kp->state == KEYPAD_STATE_CODE_INPUT) {
+        status = keypad_verify_code(kp);
+        keypad_reset(kp);
+    }
+
+    return status;
+}
+
 static enum keypad_status keypad_handle_command(struct keypad *kp) {
     ASSERT_STATE(kp->state, KEYPAD_STATE_COMMAND);
 
@@ -164,6 +163,9 @@ static void keypad_save_uid(struct keypad *kp) {
 
     memcpy(kp->uid_buffer, kp->buffer, kp->buffer_len);
     kp->uid_buffer_len = kp->buffer_len;
+
+    memset(kp->buffer, 0, KEYPAD_MAX_BUFFER_SIZE);
+    kp->buffer_len = 0;
 }
 
 static enum keypad_status keypad_verify_code(struct keypad *kp) {
@@ -179,6 +181,20 @@ static enum keypad_status keypad_verify_code(struct keypad *kp) {
     );
 
     return result ? KEYPAD_STATUS_OK : KEYPAD_STATUS_BAD_CODE;
+}
+
+static enum keypad_status keypad_save_digit(struct keypad *kp, uint8_t code) {
+    if (kp->state == KEYPAD_STATE_RESET) {
+        kp->state = KEYPAD_STATE_UID_INPUT;
+    }
+
+    if (kp->buffer_len == KEYPAD_MAX_BUFFER_SIZE) {
+        return KEYPAD_STATUS_BUFFER_OVERFLOW;
+    }
+
+    kp->buffer[kp->buffer_len++] = code;
+
+    return KEYPAD_STATUS_OK;
 }
 
 const char *keypad_state_txt(enum keypad_state state) {
