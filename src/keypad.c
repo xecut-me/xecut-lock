@@ -21,52 +21,11 @@
 #define ASSERT_STATE(state, required_state) \
     __ASSERT((state) == required_state, "Required state is " #required_state " but keypad is in state %s", keypad_state_txt(state));
 
-enum keypad_state {
-    KEYPAD_STATE_RESET = 0,
-    KEYPAD_STATE_COMMAND = 1,
-    KEYPAD_STATE_UID_INPUT = 2,
-    KEYPAD_STATE_CODE_INPUT = 3,
-};
-
-static const char *keypad_state_txt(enum keypad_state state) {
-    switch (state) {
-        case KEYPAD_STATE_RESET:
-            return "KEYPAD_STATE_RESET";
-        case KEYPAD_STATE_COMMAND:
-            return "KEYPAD_STATE_COMMAND";
-        case KEYPAD_STATE_UID_INPUT:
-            return "KEYPAD_STATE_UID_INPUT";
-        case KEYPAD_STATE_CODE_INPUT:
-            return "KEYPAD_STATE_CODE_INPUT";
-        default:
-            return "UNKNOWN";
-    }
-}
-
 static int  keypad_handle_button(struct keypad *kp, uint8_t code);
 static void keypad_reset(struct keypad *kp);
 static int  keypad_handle_command(struct keypad *kp);
 static void keypad_save_uid(struct keypad *kp);
 static int  keypad_verify_code(struct keypad *kp);
-
-struct keypad {
-    // Internal keypad state. See img/keypad-state.jpg
-    enum keypad_state state;
-
-    // UART
-    const struct device *device;
-
-    // Callbacks for some final states
-    struct keypad_callbacks callbacks;
-
-    // Buffer for common state
-    uint8_t *buffer;
-    size_t buffer_len;
-
-    // Special buffer for UID
-    uint8_t *uid_buffer;
-    size_t uid_buffer_len;
-};
 
 void keypad_init(
     const struct device *uart,
@@ -90,7 +49,7 @@ void keypad_init(
     };
 }
 
-int keypad_poll(struct keypad *kp) {
+enum keypad_status keypad_poll(struct keypad *kp) {
     uint8_t byte;
 
     if (kp->buffer_len == KEYPAD_MAX_BUFFER_SIZE) {
@@ -104,7 +63,7 @@ int keypad_poll(struct keypad *kp) {
     return keypad_handle_button(kp, byte);
 }
 
-static int keypad_handle_button(struct keypad *kp, uint8_t code) {
+static enum keypad_status keypad_handle_button(struct keypad *kp, uint8_t code) {
     switch (code) {
         // Reset state
         case KEYPAD_BTN_CLEAR:
@@ -189,7 +148,7 @@ static void keypad_reset(struct keypad *kp) {
     kp->uid_buffer_len = 0;
 }
 
-static int keypad_handle_command(struct keypad *kp) {
+static enum keypad_status keypad_handle_command(struct keypad *kp) {
     ASSERT_STATE(kp->state, KEYPAD_STATE_COMMAND);
 
     bool result = kp->callbacks.command(
@@ -207,7 +166,7 @@ static void keypad_save_uid(struct keypad *kp) {
     kp->uid_buffer_len = kp->buffer_len;
 }
 
-static int keypad_verify_code(struct keypad *kp) {
+static enum keypad_status keypad_verify_code(struct keypad *kp) {
     ASSERT_STATE(kp->state, KEYPAD_STATE_CODE_INPUT);
 
     bool result = kp->callbacks.checkin(
@@ -220,4 +179,40 @@ static int keypad_verify_code(struct keypad *kp) {
     );
 
     return result ? KEYPAD_STATUS_OK : KEYPAD_STATUS_BAD_CODE;
+}
+
+const char *keypad_state_txt(enum keypad_state state) {
+    switch (state) {
+        case KEYPAD_STATE_RESET:
+            return "RESET";
+        case KEYPAD_STATE_COMMAND:
+            return "COMMAND";
+        case KEYPAD_STATE_UID_INPUT:
+            return "UID_INPUT";
+        case KEYPAD_STATE_CODE_INPUT:
+            return "CODE_INPUT";
+        default:
+            return "UNKNOWN";
+    }
+}
+
+const char *keypad_status_txt(enum keypad_status status) {
+    switch (status) {
+        case KEYPAD_STATUS_OK:
+            return "OK";
+        case KEYPAD_STATUS_EMPTY_UART:
+            return "EMPTY_UART";
+        case KEYPAD_STATUS_BUFFER_OVERFLOW:
+            return "BUFFER_OVERFLOW";
+        case KEYPAD_STATUS_INVALID_STATE:
+            return "KEYPAD_STATUS_INVALID_STATE";
+        case KEYPAD_STATUS_UNHANDLED_COMMAND:
+            return "UNHANDLED_COMMAND";
+        case KEYPAD_STATUS_BAD_CODE:
+            return "BAD_CODE";
+        case KEYPAD_STATUS_UNKNOWN_BUTTON:
+            return "UNKNOWN_BUTTON";
+        default:
+            return "UNKNOWN";
+    }
 }
