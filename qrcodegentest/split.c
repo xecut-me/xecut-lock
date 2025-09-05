@@ -39,18 +39,7 @@
 #define isdigit(__c__) ((unsigned char)((signed char)(__c__) - '0') < 10)
 #define isalnum(__c__) (QRinput_lookAnTable(__c__) >= 0)
 
-#if !HAVE_STRDUP
-#undef strdup
-char *strdup(const char *s)
-{
-	size_t len = strlen(s) + 1;
-	void *newstring = malloc(len);
-	if(newstring == NULL) return NULL;
-	return (char *)memcpy(newstring, s, len);
-}
-#endif
-
-static QRencodeMode Split_identifyMode(const char *string, QRencodeMode hint)
+static QRencodeMode Split_identifyMode(const char *string)
 {
 	unsigned char c, d;
 	unsigned int word;
@@ -67,10 +56,10 @@ static QRencodeMode Split_identifyMode(const char *string, QRencodeMode hint)
 	return QR_MODE_8;
 }
 
-static int Split_eatAn(const char *string, QRinput *input, QRencodeMode hint);
-static int Split_eat8(const char *string, QRinput *input, QRencodeMode hint);
+static int Split_eatAn(const char *string, QRinput *input);
+static int Split_eat8(const char *string, QRinput *input);
 
-static int Split_eatNum(const char *string, QRinput *input,QRencodeMode hint)
+static int Split_eatNum(const char *string, QRinput *input)
 {
 	const char *p;
 	int ret;
@@ -86,13 +75,13 @@ static int Split_eatNum(const char *string, QRinput *input,QRencodeMode hint)
 		p++;
 	}
 	run = (int)(p - string);
-	mode = Split_identifyMode(p, hint);
+	mode = Split_identifyMode(p);
 	if(mode == QR_MODE_8) {
 		dif = QRinput_estimateBitsModeNum(run) + 4 + ln
 			+ QRinput_estimateBitsMode8(1) /* + 4 + l8 */
 			- QRinput_estimateBitsMode8(run + 1) /* - 4 - l8 */;
 		if(dif > 0) {
-			return Split_eat8(string, input, hint);
+			return Split_eat8(string, input);
 		}
 	}
 	if(mode == QR_MODE_AN) {
@@ -100,7 +89,7 @@ static int Split_eatNum(const char *string, QRinput *input,QRencodeMode hint)
 			+ QRinput_estimateBitsModeAn(1) /* + 4 + la */
 			- QRinput_estimateBitsModeAn(run + 1) /* - 4 - la */;
 		if(dif > 0) {
-			return Split_eatAn(string, input, hint);
+			return Split_eatAn(string, input);
 		}
 	}
 
@@ -110,7 +99,7 @@ static int Split_eatNum(const char *string, QRinput *input,QRencodeMode hint)
 	return run;
 }
 
-static int Split_eatAn(const char *string, QRinput *input, QRencodeMode hint)
+static int Split_eatAn(const char *string, QRinput *input)
 {
 	const char *p, *q;
 	int ret;
@@ -148,7 +137,7 @@ static int Split_eatAn(const char *string, QRinput *input, QRencodeMode hint)
 			+ QRinput_estimateBitsMode8(1) /* + 4 + l8 */
 			- QRinput_estimateBitsMode8(run + 1) /* - 4 - l8 */;
 		if(dif > 0) {
-			return Split_eat8(string, input, hint);
+			return Split_eat8(string, input);
 		}
 	}
 
@@ -158,7 +147,7 @@ static int Split_eatAn(const char *string, QRinput *input, QRencodeMode hint)
 	return run;
 }
 
-static int Split_eat8(const char *string, QRinput *input, QRencodeMode hint)
+static int Split_eat8(const char *string, QRinput *input)
 {
 	const char *p, *q;
 	QRencodeMode mode;
@@ -174,13 +163,13 @@ static int Split_eat8(const char *string, QRinput *input, QRencodeMode hint)
 
 	p = string + 1;
 	while(*p != '\0') {
-		mode = Split_identifyMode(p, hint);
+		mode = Split_identifyMode(p);
 		if(mode == QR_MODE_NUM) {
 			q = p;
 			while(isdigit(*q)) {
 				q++;
 			}
-			if(Split_identifyMode(q, hint) == QR_MODE_8) {
+			if(Split_identifyMode(q) == QR_MODE_8) {
 				swcost = 4 + l8;
 			} else {
 				swcost = 0;
@@ -198,7 +187,7 @@ static int Split_eat8(const char *string, QRinput *input, QRencodeMode hint)
 			while(isalnum(*q)) {
 				q++;
 			}
-			if(Split_identifyMode(q, hint) == QR_MODE_8) {
+			if(Split_identifyMode(q) == QR_MODE_8) {
 				swcost = 4 + l8;
 			} else {
 				swcost = 0;
@@ -223,40 +212,19 @@ static int Split_eat8(const char *string, QRinput *input, QRencodeMode hint)
 	return run;
 }
 
-static char *dupAndToUpper(const char *str, QRencodeMode hint)
-{
-	char *newstr, *p;
-	QRencodeMode mode;
-
-	newstr = strdup(str);
-	if(newstr == NULL) return NULL;
-
-	p = newstr;
-	while(*p != '\0') {
-		mode = Split_identifyMode(p, hint);
-		if (*p >= 'a' && *p <= 'z') {
-			*p = (char)((int)*p - 32);
-		}
-		p++;
-	}
-
-	return newstr;
-}
-
-int Split_splitStringToQRinput(const char *string, QRinput *input,
-		QRencodeMode hint)
+int Split_splitStringToQRinput(const char *string, QRinput *input)
 {
 	int length;
 	QRencodeMode mode;
 
 	while(*string != '\0') {
-		mode = Split_identifyMode(string, hint);
+		mode = Split_identifyMode(string);
 		if(mode == QR_MODE_NUM) {
-			length = Split_eatNum(string, input, hint);
+			length = Split_eatNum(string, input);
 		} else if(mode == QR_MODE_AN) {
-			length = Split_eatAn(string, input, hint);
+			length = Split_eatAn(string, input);
 		} else {
-			length = Split_eat8(string, input, hint);
+			length = Split_eat8(string, input);
 		}
 		if(length == 0) break;
 		if(length < 0) return -1;

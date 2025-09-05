@@ -51,23 +51,6 @@ struct _QRinput {
 	unsigned char appid;
 };
 
-/******************************************************************************
- * Structured append input data
- *****************************************************************************/
-typedef struct _QRinput_InputList QRinput_InputList;
-
-struct _QRinput_InputList {
-	QRinput *input;
-	QRinput_InputList *next;
-};
-
-struct _QRinput_Struct {
-	int size; ///< number of structured symbols
-	int parity;
-	QRinput_InputList *head;
-	QRinput_InputList *tail;
-};
-
 /**
  * Pack all bit streams padding bits into a byte array.
  * @param input input data.
