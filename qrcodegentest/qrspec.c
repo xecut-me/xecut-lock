@@ -172,9 +172,6 @@ int QRspec_maximumWords(QRencodeMode mode, int version)
 
 	bits = lengthTableBits[mode][l];
 	words = (1 << bits) - 1;
-	if(mode == QR_MODE_KANJI) {
-		words *= 2; // the number of bytes is required
-	}
 
 	return words;
 }

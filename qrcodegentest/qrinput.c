@@ -37,7 +37,7 @@
  *****************************************************************************/
 int QRinput_isSplittableMode(QRencodeMode mode)
 {
-	return (mode >= QR_MODE_NUM && mode <= QR_MODE_KANJI);
+	return (mode >= QR_MODE_NUM && mode < QR_MODE_STRUCTURE);
 }
 
 /******************************************************************************
@@ -497,82 +497,6 @@ static int QRinput_encodeMode8(QRinput_List *entry, BitStream *bstream, int vers
 	return 0;
 }
 
-
-/******************************************************************************
- * Kanji data
- *****************************************************************************/
-
-/**
- * Estimate the length of the encoded bit stream of kanji data.
- * @param size
- * @return number of bits
- */
-int QRinput_estimateBitsModeKanji(int size)
-{
-	return (size / 2) * 13;
-}
-
-/**
- * Check the input data.
- * @param size
- * @param data
- * @return result
- */
-static int QRinput_checkModeKanji(int size, const unsigned char *data)
-{
-	int i;
-	unsigned int val;
-
-	if(size & 1)
-		return -1;
-
-	for(i = 0; i < size; i+=2) {
-		val = ((unsigned int)data[i] << 8) | data[i+1];
-		if(val < 0x8140 || (val > 0x9ffc && val < 0xe040) || val > 0xebbf) {
-			return -1;
-		}
-	}
-
-	return 0;
-}
-
-/**
- * Convert the kanji data and append to a bit stream.
- * @param entry
- * @retval 0 success
- * @retval -1 an error occurred and errno is set to indeicate the error.
- *            See Execptions for the details.
- * @throw ENOMEM unable to allocate memory.
- * @throw EINVAL invalid version.
- */
-static int QRinput_encodeModeKanji(QRinput_List *entry, BitStream *bstream, int version)
-{
-	int ret, i;
-	unsigned int val, h;
-
-	ret = BitStream_appendNum(bstream, 4, QRSPEC_MODEID_KANJI);
-	if(ret < 0) return -1;
-
-	ret = BitStream_appendNum(bstream, (size_t)QRspec_lengthIndicator(QR_MODE_KANJI, version), (unsigned int)entry->size/2);
-	if(ret < 0) return -1;
-
-	for(i = 0; i < entry->size; i+=2) {
-		val = ((unsigned int)entry->data[i] << 8) | entry->data[i+1];
-		if(val <= 0x9ffc) {
-			val -= 0x8140;
-		} else {
-			val -= 0xc140;
-		}
-		h = (val >> 8) * 0xc0;
-		val = (val & 0xff) + h;
-
-		ret = BitStream_appendNum(bstream, 13, val);
-		if(ret < 0) return -1;
-	}
-
-	return 0;
-}
-
 /******************************************************************************
  * Structured Symbol
  *****************************************************************************/
@@ -705,8 +629,6 @@ int QRinput_check(QRencodeMode mode, int size, const unsigned char *data)
 			return QRinput_checkModeNum(size, (const char *)data);
 		case QR_MODE_AN:
 			return QRinput_checkModeAn(size, (const char *)data);
-		case QR_MODE_KANJI:
-			return QRinput_checkModeKanji(size, data);
 		case QR_MODE_8:
 			return 0;
 		case QR_MODE_STRUCTURE:
@@ -752,9 +674,6 @@ static int QRinput_estimateBitStreamSizeOfEntry(QRinput_List *entry, int version
 		case QR_MODE_8:
 			bits = QRinput_estimateBitsMode8(entry->size);
 			break;
-		case QR_MODE_KANJI:
-			bits = QRinput_estimateBitsModeKanji(entry->size);
-			break;
 		case QR_MODE_STRUCTURE:
 			return STRUCTURE_HEADER_SIZE;
 		case QR_MODE_ECI:
@@ -770,11 +689,7 @@ static int QRinput_estimateBitStreamSizeOfEntry(QRinput_List *entry, int version
 
 	l = QRspec_lengthIndicator(entry->mode, version);
 	m = 1 << l;
-	if(entry->mode == QR_MODE_KANJI) {
-		num = (entry->size/2 + m - 1) / m;
-	} else {
-		num = (entry->size + m - 1) / m;
-	}
+	num = (entry->size + m - 1) / m;
 
 	bits += num * (MODE_INDICATOR_SIZE + l);
 
@@ -856,9 +771,6 @@ int QRinput_lengthOfCode(QRencodeMode mode, int version, int bits)
 		case QR_MODE_8:
 			size = payload / 8;
 			break;
-		case QR_MODE_KANJI:
-			size = (payload / 13) * 2;
-			break;
 		case QR_MODE_STRUCTURE:
 			size = payload / 8;
 			break;
@@ -916,9 +828,6 @@ static int QRinput_encodeBitStream(QRinput_List *entry, BitStream *bstream, int 
 				break;
 			case QR_MODE_8:
 				ret = QRinput_encodeMode8(entry, bstream, version);
-				break;
-			case QR_MODE_KANJI:
-				ret = QRinput_encodeModeKanji(entry, bstream, version);
 				break;
 			case QR_MODE_STRUCTURE:
 				ret = QRinput_encodeModeStructure(entry, bstream);

@@ -62,14 +62,6 @@ static QRencodeMode Split_identifyMode(const char *string, QRencodeMode hint)
 		return QR_MODE_NUM;
 	} else if(isalnum(c)) {
 		return QR_MODE_AN;
-	} else if(hint == QR_MODE_KANJI) {
-		d = (unsigned char)string[1];
-		if(d != '\0') {
-			word = ((unsigned int)c << 8) | d;
-			if((word >= 0x8140 && word <= 0x9ffc) || (word >= 0xe040 && word <= 0xebbf)) {
-				return QR_MODE_KANJI;
-			}
-		}
 	}
 
 	return QR_MODE_8;
@@ -166,23 +158,6 @@ static int Split_eatAn(const char *string, QRinput *input, QRencodeMode hint)
 	return run;
 }
 
-static int Split_eatKanji(const char *string, QRinput *input, QRencodeMode hint)
-{
-	const char *p;
-	int ret;
-	int run;
-
-	p = string;
-	while(Split_identifyMode(p, hint) == QR_MODE_KANJI) {
-		p += 2;
-	}
-	run = (int)(p - string);
-	ret = QRinput_append(input, QR_MODE_KANJI, run, (unsigned char *)string);
-	if(ret < 0) return -1;
-
-	return run;
-}
-
 static int Split_eat8(const char *string, QRinput *input, QRencodeMode hint)
 {
 	const char *p, *q;
@@ -200,9 +175,6 @@ static int Split_eat8(const char *string, QRinput *input, QRencodeMode hint)
 	p = string + 1;
 	while(*p != '\0') {
 		mode = Split_identifyMode(p, hint);
-		if(mode == QR_MODE_KANJI) {
-			break;
-		}
 		if(mode == QR_MODE_NUM) {
 			q = p;
 			while(isdigit(*q)) {
@@ -251,31 +223,6 @@ static int Split_eat8(const char *string, QRinput *input, QRencodeMode hint)
 	return run;
 }
 
-static int Split_splitString(const char *string, QRinput *input,
-		QRencodeMode hint)
-{
-	int length;
-	QRencodeMode mode;
-
-	while(*string != '\0') {
-		mode = Split_identifyMode(string, hint);
-		if(mode == QR_MODE_NUM) {
-			length = Split_eatNum(string, input, hint);
-		} else if(mode == QR_MODE_AN) {
-			length = Split_eatAn(string, input, hint);
-		} else if(mode == QR_MODE_KANJI && hint == QR_MODE_KANJI) {
-			length = Split_eatKanji(string, input, hint);
-		} else {
-			length = Split_eat8(string, input, hint);
-		}
-		if(length == 0) break;
-		if(length < 0) return -1;
-		string += length;
-	}
-
-	return 0;
-}
-
 static char *dupAndToUpper(const char *str, QRencodeMode hint)
 {
 	char *newstr, *p;
@@ -287,14 +234,10 @@ static char *dupAndToUpper(const char *str, QRencodeMode hint)
 	p = newstr;
 	while(*p != '\0') {
 		mode = Split_identifyMode(p, hint);
-		if(mode == QR_MODE_KANJI) {
-			p += 2;
-		} else {
-			if (*p >= 'a' && *p <= 'z') {
-				*p = (char)((int)*p - 32);
-			}
-			p++;
+		if (*p >= 'a' && *p <= 'z') {
+			*p = (char)((int)*p - 32);
 		}
+		p++;
 	}
 
 	return newstr;
@@ -303,10 +246,22 @@ static char *dupAndToUpper(const char *str, QRencodeMode hint)
 int Split_splitStringToQRinput(const char *string, QRinput *input,
 		QRencodeMode hint)
 {
-	if(string == NULL || *string == '\0') {
-		errno = EINVAL;
-		return -1;
+	int length;
+	QRencodeMode mode;
+
+	while(*string != '\0') {
+		mode = Split_identifyMode(string, hint);
+		if(mode == QR_MODE_NUM) {
+			length = Split_eatNum(string, input, hint);
+		} else if(mode == QR_MODE_AN) {
+			length = Split_eatAn(string, input, hint);
+		} else {
+			length = Split_eat8(string, input, hint);
+		}
+		if(length == 0) break;
+		if(length < 0) return -1;
+		string += length;
 	}
 
-	return Split_splitString(string, input, hint);
+	return 0;
 }
