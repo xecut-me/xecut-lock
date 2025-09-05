@@ -41,10 +41,7 @@
 
 static QRencodeMode Split_identifyMode(const char *string)
 {
-	unsigned char c, d;
-	unsigned int word;
-
-	c = (unsigned char)string[0];
+	unsigned char c = (unsigned char)string[0];
 
 	if(c == '\0') return QR_MODE_NUL;
 	if(isdigit(c)) {

@@ -17,6 +17,7 @@
 #include "sntp.h"
 #include "otp.h"
 #include "keypad.h"
+#include "libqrencode/zephyr.h"
 
 LOG_MODULE_REGISTER(MAIN);
 
@@ -38,6 +39,10 @@ bool checkin_test(uint8_t *uid, size_t uid_len, uint8_t *code, size_t code_len) 
 int main(void) {
     int ret;
 
+    const char *text = "otpauth://totp/Xecut%3A________________________________?period=30&digits=6&algorithm=SHA1&secret=AAOAAOOAALLAAQMM&issuer=Xecut";
+
+    display_qr_code(text);
+
     // wifi_init();
     
     // ret = wifi_connect(WIFI_SSID, WIFI_PSK);
@@ -52,26 +57,26 @@ int main(void) {
     //     return 0;
     // }
 
-    #define UART_NODE DT_NODELABEL(uart0)
-    const struct device *uart = DEVICE_DT_GET(UART_NODE);
+    // #define UART_NODE DT_NODELABEL(uart0)
+    // const struct device *uart = DEVICE_DT_GET(UART_NODE);
 
-    struct keypad kp;
-    struct keypad_callbacks kp_callbacks = {
-        .command = command_test,
-        .checkin = checkin_test,
-    };
+    // struct keypad kp;
+    // struct keypad_callbacks kp_callbacks = {
+    //     .command = command_test,
+    //     .checkin = checkin_test,
+    // };
 
-    keypad_init(uart, kp_callbacks, &kp);
+    // keypad_init(uart, kp_callbacks, &kp);
 
-    for (;;) {
-        enum keypad_status status = keypad_poll(&kp);
-        if (status != KEYPAD_STATUS_EMPTY_UART) {
-            printf("keypad_poll return status %s, current state is %s\n", keypad_status_txt(status), keypad_state_txt(kp.state));
-        }
+    // for (;;) {
+    //     enum keypad_status status = keypad_poll(&kp);
+    //     if (status != KEYPAD_STATUS_EMPTY_UART) {
+    //         printf("keypad_poll return status %s, current state is %s\n", keypad_status_txt(status), keypad_state_txt(kp.state));
+    //     }
 
-        // Give some time for kernel
-        k_yield();
-    }
+    //     // Give some time for kernel
+    //     k_yield();
+    // }
 
     // try_sync_time();
 

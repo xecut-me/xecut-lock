@@ -1,10 +1,8 @@
-#include <stdio.h>
-#include <string.h>
+#include "zephyr.h"
+
+#include <stdlib.h>
 
 #include "qrencode.h"
-#include "split.h"
-
-static const char *text = "otpauth://totp/Xecut%3Atest_user?period=30&digits=6&algorithm=SHA1&secret=AAOAAOOAALLAAQMM&issuer=Xecut";
 
 static int margin = 2;
 
@@ -82,9 +80,8 @@ static int writeUTF8(const QRcode *qrcode)
 	return 0;
 }
 
-int main(int argc, char **argv)
-{
-	QRinput *input;
+int display_qr_code(const char *text) {
+    QRinput *input;
 	QRcode *code;
 	int ret;
 
@@ -101,6 +98,4 @@ int main(int argc, char **argv)
 	QRinput_free(input);
 
 	writeUTF8(code);
-
-	return 0;
 }

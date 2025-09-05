@@ -5,9 +5,7 @@ cmake_minimum_required(VERSION 3.20.0)
 find_package(Zephyr REQUIRED HINTS $ENV{ZEPHYR_BASE})
 project(app)
 
-target_sources(
-    app
-    PRIVATE
+set(SOURCES
     src/main.c
     src/wifi.c
     src/dns.c
@@ -15,3 +13,9 @@ target_sources(
     src/otp.c
     src/keypad.c
 )
+
+file(GLOB LIBQRENCODE_SOURCES "src/libqrencode/*.c")
+
+list(APPEND SOURCES ${LIBQRENCODE_SOURCES})
+
+target_sources(app PRIVATE ${SOURCES})
