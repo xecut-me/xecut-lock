@@ -31,14 +31,14 @@
 #include "qrspec.h"
 #include "mask.h"
 
-int Mask_writeFormatInformation(int width, unsigned char *frame, int mask, QRecLevel level)
+int Mask_writeFormatInformation(int width, unsigned char *frame, int mask)
 {
 	unsigned int format;
 	unsigned char v;
 	int i;
 	int blacks = 0;
 
-	format = QRspec_getFormatInfo(mask, level);
+	format = QRspec_getFormatInfo(mask);
 
 	for(i = 0; i < 8; i++) {
 		if(format & 1) {
@@ -147,21 +147,7 @@ static MaskMaker *maskMakers[maskNum] = {
 	Mask_mask4, Mask_mask5, Mask_mask6, Mask_mask7
 };
 
-#ifdef WITH_TESTS
-unsigned char *Mask_makeMaskedFrame(int width, unsigned char *frame, int mask)
-{
-	unsigned char *masked;
-
-	masked = (unsigned char *)malloc((size_t)(width * width));
-	if(masked == NULL) return NULL;
-
-	maskMakers[mask](width, frame, masked);
-
-	return masked;
-}
-#endif
-
-unsigned char *Mask_makeMask(int width, unsigned char *frame, int mask, QRecLevel level)
+unsigned char *Mask_makeMask(int width, unsigned char *frame, int mask)
 {
 	unsigned char *masked;
 
@@ -174,7 +160,7 @@ unsigned char *Mask_makeMask(int width, unsigned char *frame, int mask, QRecLeve
 	if(masked == NULL) return NULL;
 
 	maskMakers[mask](width, frame, masked);
-	Mask_writeFormatInformation(width, masked, mask, level);
+	Mask_writeFormatInformation(width, masked, mask);
 
 	return masked;
 }
@@ -319,7 +305,7 @@ int Mask_evaluateSymbol(int width, unsigned char *frame)
 	return demerit;
 }
 
-unsigned char *Mask_mask(int width, unsigned char *frame, QRecLevel level)
+unsigned char *Mask_mask(int width, unsigned char *frame)
 {
 	int i;
 	unsigned char *mask, *bestMask;
@@ -341,7 +327,7 @@ unsigned char *Mask_mask(int width, unsigned char *frame, QRecLevel level)
 //		n1 = n2 = n3 = n4 = 0;
 		demerit = 0;
 		blacks = maskMakers[i](width, frame, mask);
-		blacks += Mask_writeFormatInformation(width, mask, i, level);
+		blacks += Mask_writeFormatInformation(width, mask, i);
 		bratio = (200 * blacks + w2) / w2 / 2; /* (int)(100*blacks/w2+0.5) */
 		demerit = (abs(bratio - 50) / 5) * N4;
 //		n4 = demerit;

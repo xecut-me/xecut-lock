@@ -107,7 +107,7 @@ static QRinput_List *QRinput_List_dup(QRinput_List *entry)
  * Input Data
  *****************************************************************************/
 
-QRinput *QRinput_new2(int version, QRecLevel level)
+QRinput *QRinput_new2(int version)
 {
 	QRinput *input;
 
@@ -117,7 +117,6 @@ QRinput *QRinput_new2(int version, QRecLevel level)
 	input->head = NULL;
 	input->tail = NULL;
 	input->version = version;
-	input->level = level;
 	input->fnc1 = 0;
 
 	return input;
@@ -136,23 +135,6 @@ int QRinput_setVersion(QRinput *input, int version)
 	}
 
 	input->version = version;
-
-	return 0;
-}
-
-QRecLevel QRinput_getErrorCorrectionLevel(QRinput *input)
-{
-	return input->level;
-}
-
-int QRinput_setErrorCorrectionLevel(QRinput *input, QRecLevel level)
-{
-	if(level > QR_ECLEVEL_H) {
-		errno = EINVAL;
-		return -1;
-	}
-
-	input->level = level;
 
 	return 0;
 }
@@ -279,7 +261,7 @@ QRinput *QRinput_dup(QRinput *input)
 	QRinput *n;
 	QRinput_List *list, *e;
 
-	n = QRinput_new2(input->version, input->level);
+	n = QRinput_new2(input->version);
 	if(n == NULL) return NULL;
 
 	list = input->head;
@@ -833,7 +815,7 @@ int QRinput_estimateVersion(QRinput *input)
 	do {
 		prev = version;
 		bits = QRinput_estimateBitStreamSize(input, prev);
-		version = QRspec_getMinimumVersion((bits + 7) / 8, input->level);
+		version = QRspec_getMinimumVersion((bits + 7) / 8);
 		if(prev == 0 && version > 1) {
 			version--;
 		}
@@ -1010,7 +992,7 @@ static int QRinput_convertData(QRinput *input, BitStream *bstream)
 		BitStream_reset(bstream);
 		bits = QRinput_createBitStream(input, bstream);
 		if(bits < 0) return -1;
-		ver = QRspec_getMinimumVersion((bits + 7) / 8, input->level);
+		ver = QRspec_getMinimumVersion((bits + 7) / 8);
 		if(ver > QRinput_getVersion(input)) {
 			QRinput_setVersion(input, ver);
 		} else {
@@ -1037,7 +1019,7 @@ static int QRinput_appendPaddingBit(BitStream *bstream, QRinput *input)
 	int padlen;
 
 	bits = (int)BitStream_size(bstream);
-	maxwords = QRspec_getDataLength(input->version, input->level);
+	maxwords = QRspec_getDataLength(input->version);
 	maxbits = maxwords * 8;
 
 	if(maxbits < bits) {
@@ -1311,7 +1293,7 @@ QRinput_Struct *QRinput_splitQRinputToStruct(QRinput *input)
 	}
 
 	QRinput_Struct_setParity(s, QRinput_calcParity(input));
-	maxbits = QRspec_getDataLength(input->version, input->level) * 8 - STRUCTURE_HEADER_SIZE;
+	maxbits = QRspec_getDataLength(input->version) * 8 - STRUCTURE_HEADER_SIZE;
 
 	if(maxbits <= 0) goto ABORT;
 
@@ -1332,7 +1314,7 @@ QRinput_Struct *QRinput_splitQRinputToStruct(QRinput *input)
 			list = list->next;
 		} else {
 			bytes = QRinput_lengthOfCode(list->mode, input->version, maxbits - bits);
-			p = QRinput_new2(input->version, input->level);
+			p = QRinput_new2(input->version);
 			if(p == NULL) goto ABORT;
 			if(bytes > 0) {
 				/* Splits this entry into 2 entries. */

@@ -39,7 +39,7 @@
  * @param level error correction level
  * @return maximum size (bytes)
  */
-extern int QRspec_getDataLength(int version, QRecLevel level);
+extern int QRspec_getDataLength(int version);
 
 /**
  * Return maximum error correction code length (bytes) for the version.
@@ -47,7 +47,7 @@ extern int QRspec_getDataLength(int version, QRecLevel level);
  * @param level error correction level
  * @return ECC size (bytes)
  */
-extern int QRspec_getECCLength(int version, QRecLevel level);
+extern int QRspec_getECCLength(int version);
 
 /**
  * Return a version number that satisfies the input code length.
@@ -55,7 +55,7 @@ extern int QRspec_getECCLength(int version, QRecLevel level);
  * @param level error correction level
  * @return version number
  */
-extern int QRspec_getMinimumVersion(int size, QRecLevel level);
+extern int QRspec_getMinimumVersion(int size);
 
 /**
  * Return the width of the symbol for the version.
@@ -103,7 +103,7 @@ extern int QRspec_maximumWords(QRencodeMode mode, int version);
  * {# of type1 blocks, # of data code, # of ecc code,
  *  # of type2 blocks, # of data code}
  */
-void QRspec_getEccSpec(int version, QRecLevel level, int spec[5]);
+void QRspec_getEccSpec(int version, int spec[5]);
 
 #define QRspec_rsBlockNum(__spec__) (__spec__[0] + __spec__[3])
 #define QRspec_rsBlockNum1(__spec__) (__spec__[0])
@@ -138,10 +138,9 @@ extern unsigned int QRspec_getVersionPattern(int version);
 /**
  * Return BCH encoded format information pattern.
  * @param mask mask number
- * @param level error correction level
  * @return BCH encoded format information pattern
  */
-extern unsigned int QRspec_getFormatInfo(int mask, QRecLevel level);
+extern unsigned int QRspec_getFormatInfo(int mask);
 
 /******************************************************************************
  * Frame

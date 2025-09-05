@@ -18,84 +18,6 @@
  * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-/** \mainpage
- * Libqrencode is a library for encoding data in a QR Code symbol, a kind of 2D
- * symbology.
- *
- * \section encoding Encoding
- *
- * There are two methods to encode data: <b>encoding a string/data</b> or
- * <b>encoding a structured data</b>.
- *
- * \subsection encoding-string Encoding a string/data
- * You can encode a string by calling QRcode_encodeString().
- * The given string is parsed automatically and encoded. If you want to encode
- * data that can be represented as a C string style (NUL terminated), you can
- * simply use this way.
- *
- * If the input data contains Kanji (Shift-JIS) characters and you want to
- * encode them as Kanji in QR Code, you should give QR_MODE_KANJI as a hint.
- * Otherwise, all of non-alphanumeric characters are encoded as 8-bit data.
- * If you want to encode a whole string in 8-bit mode, you can use
- * QRcode_encodeString8bit() instead.
- *
- * Please note that a C string can not contain NUL characters. If your data
- * contains NUL, you must use QRcode_encodeData().
- *
- * \subsection encoding-input Encoding a structured data
- * You can construct a structured input data manually. If the structure of the
- * input data is known, you can use this method.
- * At first, create a ::QRinput object by QRinput_new(). Then add input data
- * to the QRinput object by QRinput_append(). Finally call QRcode_encodeInput()
- * to encode the QRinput data.
- * You can reuse the QRinput object again to encode it in other symbols with
- * different parameters.
- *
- * \section result Result
- * The encoded symbol is generated as a ::QRcode object. It will contain its
- * version number, the width of the symbol, and an array represents the symbol.
- * See ::QRcode for the details. You can free the object by QRcode_free().
- *
- * Please note that the version of the result may be larger than specified.
- * In such cases, the input data would be too large to be encoded in a
- * symbol of the specified version.
- *
- * \section structured Structured append
- * Libqrencode can generate "Structured-appended" symbols that enables to split
- * a large data set into mulitple QR codes. A QR code reader concatenates
- * multiple QR code symbols into a string.
- * Just like QRcode_encodeString(), you can use QRcode_encodeStringStructured()
- * to generate structured-appended symbols. This functions returns an instance
- * of ::QRcode_List. The returned list is a singly-linked list of QRcode: you
- * can retrieve each QR code in this way:
- *
- * \code
- * QRcode_List *qrcodes;
- * QRcode_List *entry;
- * QRcode *qrcode;
- *
- * qrcodes = QRcode_encodeStringStructured(...);
- * entry = qrcodes;
- * while(entry != NULL) {
- *     qrcode = entry->code;
- *     // do something
- *     entry = entry->next;
- * }
- * QRcode_List_free(entry);
- * \endcode
- *
- * Instead of using auto-parsing functions, you can construct your own
- * structured input. At first, instantiate an object of ::QRinput_Struct
- * by calling QRinput_Struct_new(). This object can hold multiple ::QRinput,
- * and one QR code is generated for a ::QRinput.
- * QRinput_Struct_appendInput() appends a ::QRinput to a ::QRinput_Struct
- * object. In order to generate structured-appended symbols, it is required to
- * embed headers to each symbol. You can use
- * QRinput_Struct_insertStructuredAppendHeaders() to insert appropriate
- * headers to each symbol. You should call this function just once before
- * encoding symbols.
- */
-
 #ifndef QRENCODE_H
 #define QRENCODE_H
 
@@ -117,16 +39,6 @@ typedef enum {
 	QR_MODE_FNC1FIRST,  ///< FNC1, first position
 	QR_MODE_FNC1SECOND, ///< FNC1, second position
 } QRencodeMode;
-
-/**
- * Level of error correction.
- */
-typedef enum {
-	QR_ECLEVEL_L = 0, ///< lowest
-	QR_ECLEVEL_M,
-	QR_ECLEVEL_Q,
-	QR_ECLEVEL_H      ///< highest
-} QRecLevel;
 
 /**
  * Maximum version (size) of QR-code symbol.
@@ -160,7 +72,7 @@ typedef struct _QRinput QRinput;
  * @throw ENOMEM unable to allocate memory for input objects.
  * @throw EINVAL invalid arguments.
  */
-extern QRinput *QRinput_new2(int version, QRecLevel level);
+extern QRinput *QRinput_new2(int version);
 
 /**
  * Append data to an input object.
@@ -352,51 +264,6 @@ typedef struct _QRcode_List {
 extern QRcode *QRcode_encodeInput(QRinput *input);
 
 /**
- * Create a symbol from the string. The library automatically parses the input
- * string and encodes in a QR Code symbol.
- * @warning This function is THREAD UNSAFE when pthread is disabled.
- * @param string input string. It must be NUL terminated.
- * @param version version of the symbol. If 0, the library chooses the minimum
- *                version for the given input data.
- * @param level error correction level.
- * @param hint tell the library how Japanese Kanji characters should be
- *             encoded. If QR_MODE_KANJI is given, the library assumes that the
- *             given string contains Shift-JIS characters and encodes them in
- *             Kanji-mode. If QR_MODE_8 is given, all of non-alphanumerical
- *             characters will be encoded as is. If you want to embed UTF-8
- *             string, choose this. Other mode will cause EINVAL error.
- * @param casesensitive case-sensitive(1) or not(0).
- * @return an instance of QRcode class. The version of the result QRcode may
- *         be larger than the designated version. On error, NULL is returned,
- *         and errno is set to indicate the error. See Exceptions for the
- *         details.
- * @throw EINVAL invalid input object.
- * @throw ENOMEM unable to allocate memory for input objects.
- * @throw ERANGE input data is too large.
- */
-extern QRcode *QRcode_encodeString(const char *string, int version, QRecLevel level, QRencodeMode hint, int casesensitive);
-
-/**
- * Same to QRcode_encodeString(), but encode whole data in 8-bit mode.
- * @warning This function is THREAD UNSAFE when pthread is disabled.
- */
-extern QRcode *QRcode_encodeString8bit(const char *string, int version, QRecLevel level);
-
-/**
- * Encode byte stream (may include '\0') in 8-bit mode.
- * @warning This function is THREAD UNSAFE when pthread is disabled.
- * @param size size of the input data.
- * @param data input data.
- * @param version version of the symbol. If 0, the library chooses the minimum
- *                version for the given input data.
- * @param level error correction level.
- * @throw EINVAL invalid input object.
- * @throw ENOMEM unable to allocate memory for input objects.
- * @throw ERANGE input data is too large.
- */
-extern QRcode *QRcode_encodeData(int size, const unsigned char *data, int version, QRecLevel level);
-
-/**
  * Free the instance of QRcode class.
  * @param qrcode an instance of QRcode class.
  */
@@ -409,48 +276,6 @@ extern void QRcode_free(QRcode *qrcode);
  * @return a singly-linked list of QRcode.
  */
 extern QRcode_List *QRcode_encodeInputStructured(QRinput_Struct *s);
-
-/**
- * Create structured symbols from the string. The library automatically parses
- * the input string and encodes in a QR Code symbol.
- * @warning This function is THREAD UNSAFE when pthread is disabled.
- * @param string input string. It must be NUL terminated.
- * @param version version of the symbol.
- * @param level error correction level.
- * @param hint tell the library how Japanese Kanji characters should be
- *             encoded. If QR_MODE_KANJI is given, the library assumes that the
- *             given string contains Shift-JIS characters and encodes them in
- *             Kanji-mode. If QR_MODE_8 is given, all of non-alphanumerical
- *             characters will be encoded as is. If you want to embed UTF-8
- *             string, choose this. Other mode will cause EINVAL error.
- * @param casesensitive case-sensitive(1) or not(0).
- * @return a singly-linked list of QRcode. On error, NULL is returned, and
- *         errno is set to indicate the error. See Exceptions for the details.
- * @throw EINVAL invalid input object.
- * @throw ENOMEM unable to allocate memory for input objects.
- */
-extern QRcode_List *QRcode_encodeStringStructured(const char *string, int version, QRecLevel level, QRencodeMode hint, int casesensitive);
-
-/**
- * Same to QRcode_encodeStringStructured(), but encode whole data in 8-bit mode.
- * @warning This function is THREAD UNSAFE when pthread is disabled.
- */
-extern QRcode_List *QRcode_encodeString8bitStructured(const char *string, int version, QRecLevel level);
-
-/**
- * Create structured symbols from byte stream (may include '\0'). Wholde data
- * are encoded in 8-bit mode.
- * @warning This function is THREAD UNSAFE when pthread is disabled.
- * @param size size of the input data.
- * @param data input dat.
- * @param version version of the symbol.
- * @param level error correction level.
- * @return a singly-linked list of QRcode. On error, NULL is returned, and
- *         errno is set to indicate the error. See Exceptions for the details.
- * @throw EINVAL invalid input object.
- * @throw ENOMEM unable to allocate memory for input objects.
- */
-extern QRcode_List *QRcode_encodeDataStructured(int size, const unsigned char *data, int version, QRecLevel level);
 
 /**
  * Return the number of symbols included in a QRcode_List.

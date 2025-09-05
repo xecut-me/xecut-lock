@@ -85,7 +85,6 @@ static int writeUTF8(const QRcode *qrcode)
 int main(int argc, char **argv)
 {
 	int version = 0;
-	int level = 0;
 	int casesensitive = 1;
 	int hint = QR_MODE_8;
 
@@ -93,7 +92,7 @@ int main(int argc, char **argv)
 	QRcode *code;
 	int ret;
 
-	input = QRinput_new2(version, level);
+	input = QRinput_new2(version);
 	if(input == NULL) return 1;
 
 	ret = Split_splitStringToQRinput(text, input, hint);
