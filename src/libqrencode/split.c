@@ -30,7 +30,6 @@
 #endif
 #include <stdlib.h>
 #include <string.h>
-#include <errno.h>
 #include "qrencode.h"
 #include "qrinput.h"
 #include "qrspec.h"

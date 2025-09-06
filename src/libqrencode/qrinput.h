@@ -63,8 +63,6 @@ extern int QRinput_estimateBitsModeNum(int size);
 extern int QRinput_estimateBitsModeAn(int size);
 extern int QRinput_estimateBitsMode8(int size);
 
-extern QRinput *QRinput_dup(QRinput *input);
-
 extern const signed char QRinput_anTable[128];
 
 /**

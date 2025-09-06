@@ -1,3 +1,3 @@
-This source code (except generator.c and generator.h) is a minified and adapted version of the https://github.com/fukuchi/libqrencode library. Credit, license, and all that remains with the author.
+This source code (except allocator.h, zephyr.c and zephyr.h) is a minified and adapted version of the https://github.com/fukuchi/libqrencode library. Credit, license, and all that remains with the author.
 
 Commit hash: 715e29fd4cd71b6e452ae0f4e36d917b43122ce8.

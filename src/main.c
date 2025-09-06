@@ -37,12 +37,15 @@ bool checkin_test(uint8_t *uid, size_t uid_len, uint8_t *code, size_t code_len) 
 }
 
 int main(void) {
-    int ret;
+    // int ret;
 
-    const char *text = "otpauth://totp/Xecut%3A________________________________?period=30&digits=6&algorithm=SHA1&secret=AAOAAOOAALLAAQMM&issuer=Xecut";
+    for (int t = 0;; t++) {
+        display_qr_code("otpauth://totp/Xecut%3A________________________________?period=30&digits=6&algorithm=SHA1&secret=AAOAAOOAALLAAQMM&issuer=Xecut");
 
-    display_qr_code(text);
+        k_yield();
 
+        printf("T %d\n", t);
+    }
     // wifi_init();
     
     // ret = wifi_connect(WIFI_SSID, WIFI_PSK);

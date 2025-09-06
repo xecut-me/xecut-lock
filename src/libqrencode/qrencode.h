@@ -21,6 +21,8 @@
 #ifndef QRENCODE_H
 #define QRENCODE_H
 
+#include <stddef.h>
+
 #if defined(__cplusplus)
 extern "C" {
 #endif
@@ -36,6 +38,11 @@ typedef enum {
 	QR_MODE_FNC1FIRST,  ///< FNC1, first position
 	QR_MODE_FNC1SECOND, ///< FNC1, second position
 } QRencodeMode;
+
+/**
+ * Unspecified version of QR code. Correct version will be calculated at runtime.
+ */
+#define QR_VERSION_AUTO 0
 
 /**
  * Maximum version (size) of QR-code symbol.

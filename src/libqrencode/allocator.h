@@ -19,24 +19,17 @@
  * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#ifndef BITSTREAM_H
-#define BITSTREAM_H
+#ifndef ALLOCATOR_H
+#define ALLOCATOR_H
 
-#include "allocator.h"
+#include <stddef.h>
 
 typedef struct {
-	size_t length;
-	size_t datasize;
-	unsigned char *data;
-} BitStream;
+	void *(*malloc)(size_t size);
+	void *(*realloc)(void *ptr, size_t new_size);
+	void  (*free)(void *);
+} Allocator;
 
-extern BitStream *BitStream_new(void);
-extern int BitStream_append(BitStream *bstream, BitStream *arg);
-extern int BitStream_appendNum(BitStream *bstream, size_t bits, unsigned int num);
-extern int BitStream_appendBytes(BitStream *bstream, size_t size, unsigned char *data);
-#define BitStream_size(__bstream__) (__bstream__->length)
-#define BitStream_reset(__bstream__) (__bstream__->length = 0)
-extern unsigned char *BitStream_toByte(BitStream *bstream);
-extern void BitStream_free(BitStream *bstream);
+extern Allocator qrenc_alloc;
 
-#endif /* BITSTREAM_H */
+#endif /* ALLOCATOR_H */

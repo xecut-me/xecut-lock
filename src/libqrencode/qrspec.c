@@ -425,7 +425,7 @@ static unsigned char *QRspec_createFrame(int version)
 	unsigned int verinfo, v;
 
 	width = qrspecCapacity[version].width;
-	frame = (unsigned char *)malloc((size_t)(width * width));
+	frame = (unsigned char *)qrenc_alloc.malloc((size_t)(width * width));
 	if(frame == NULL) return NULL;
 
 	memset(frame, 0, (size_t)(width * width));

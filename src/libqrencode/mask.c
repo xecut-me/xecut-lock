@@ -27,6 +27,7 @@
 #include <limits.h>
 #include <errno.h>
 
+#include "allocator.h"
 #include "qrencode.h"
 #include "qrspec.h"
 #include "mask.h"
@@ -156,7 +157,7 @@ unsigned char *Mask_makeMask(int width, unsigned char *frame, int mask)
 		return NULL;
 	}
 
-	masked = (unsigned char *)malloc((size_t)(width * width));
+	masked = (unsigned char *)qrenc_alloc.malloc((size_t)(width * width));
 	if(masked == NULL) return NULL;
 
 	maskMakers[mask](width, frame, masked);
@@ -315,11 +316,11 @@ unsigned char *Mask_mask(int width, unsigned char *frame)
 	int demerit;
 	int w2 = width * width;
 
-	mask = (unsigned char *)malloc((size_t)w2);
+	mask = (unsigned char *)qrenc_alloc.malloc((size_t)w2);
 	if(mask == NULL) return NULL;
-	bestMask = (unsigned char *)malloc((size_t)w2);
+	bestMask = (unsigned char *)qrenc_alloc.malloc((size_t)w2);
 	if(bestMask == NULL) {
-		free(mask);
+		qrenc_alloc.free(mask);
 		return NULL;
 	}
 
@@ -338,6 +339,6 @@ unsigned char *Mask_mask(int width, unsigned char *frame)
 			memcpy(bestMask, mask, (size_t)w2);
 		}
 	}
-	free(mask);
+	qrenc_alloc.free(mask);
 	return bestMask;
 }

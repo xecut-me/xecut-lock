@@ -53,16 +53,16 @@ static QRinput_List *QRinput_List_newEntry(QRencodeMode mode, int size, const un
 		return NULL;
 	}
 
-	entry = (QRinput_List *)malloc(sizeof(QRinput_List));
+	entry = (QRinput_List *)qrenc_alloc.malloc(sizeof(QRinput_List));
 	if(entry == NULL) return NULL;
 
 	entry->mode = mode;
 	entry->size = size;
 	entry->data = NULL;
 	if(size > 0) {
-		entry->data = (unsigned char *)malloc((size_t)size);
+		entry->data = (unsigned char *)qrenc_alloc.malloc((size_t)size);
 		if(entry->data == NULL) {
-			free(entry);
+			qrenc_alloc.free(entry);
 			return NULL;
 		}
 		memcpy(entry->data, data, (size_t)size);
@@ -76,31 +76,10 @@ static QRinput_List *QRinput_List_newEntry(QRencodeMode mode, int size, const un
 static void QRinput_List_freeEntry(QRinput_List *entry)
 {
 	if(entry != NULL) {
-		free(entry->data);
+		qrenc_alloc.free(entry->data);
 		BitStream_free(entry->bstream);
-		free(entry);
+		qrenc_alloc.free(entry);
 	}
-}
-
-static QRinput_List *QRinput_List_dup(QRinput_List *entry)
-{
-	QRinput_List *n;
-
-	n = (QRinput_List *)malloc(sizeof(QRinput_List));
-	if(n == NULL) return NULL;
-
-	n->mode = entry->mode;
-	n->size = entry->size;
-	n->data = (unsigned char *)malloc((size_t)n->size);
-	if(n->data == NULL) {
-		free(n);
-		return NULL;
-	}
-	memcpy(n->data, entry->data, (size_t)entry->size);
-	n->bstream = NULL;
-	n->next = NULL;
-
-	return n;
 }
 
 /******************************************************************************
@@ -111,7 +90,7 @@ QRinput *QRinput_new(int version)
 {
 	QRinput *input;
 
-	input = (QRinput *)malloc(sizeof(QRinput));
+	input = (QRinput *)qrenc_alloc.malloc(sizeof(QRinput));
 	if(input == NULL) return NULL;
 
 	input->head = NULL;
@@ -176,30 +155,8 @@ void QRinput_free(QRinput *input)
 			QRinput_List_freeEntry(list);
 			list = next;
 		}
-		free(input);
+		qrenc_alloc.free(input);
 	}
-}
-
-QRinput *QRinput_dup(QRinput *input)
-{
-	QRinput *n;
-	QRinput_List *list, *e;
-
-	n = QRinput_new(input->version);
-	if(n == NULL) return NULL;
-
-	list = input->head;
-	while(list != NULL) {
-		e = QRinput_List_dup(list);
-		if(e == NULL) {
-			QRinput_free(n);
-			return NULL;
-		}
-		QRinput_appendEntry(n, e);
-		list = list->next;
-	}
-
-	return n;
 }
 
 /******************************************************************************

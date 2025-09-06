@@ -26,6 +26,7 @@
 #include <string.h>
 #include <errno.h>
 
+#include "allocator.h"
 #include "qrencode.h"
 #include "qrspec.h"
 #include "bitstream.h"
@@ -107,12 +108,12 @@ QRRawCode *QRraw_new(QRinput *input)
 	QRRawCode *raw;
 	int spec[5], ret;
 
-	raw = (QRRawCode *)malloc(sizeof(QRRawCode));
+	raw = (QRRawCode *)qrenc_alloc.malloc(sizeof(QRRawCode));
 	if(raw == NULL) return NULL;
 
 	raw->datacode = QRinput_getByteStream(input);
 	if(raw->datacode == NULL) {
-		free(raw);
+		qrenc_alloc.free(raw);
 		return NULL;
 	}
 
@@ -122,10 +123,10 @@ QRRawCode *QRraw_new(QRinput *input)
 	raw->b1 = QRspec_rsBlockNum1(spec);
 	raw->dataLength = QRspec_rsDataLength(spec);
 	raw->eccLength = QRspec_rsEccLength(spec);
-	raw->ecccode = (unsigned char *)malloc((size_t)raw->eccLength);
+	raw->ecccode = (unsigned char *)qrenc_alloc.malloc((size_t)raw->eccLength);
 	if(raw->ecccode == NULL) {
-		free(raw->datacode);
-		free(raw);
+		qrenc_alloc.free(raw->datacode);
+		qrenc_alloc.free(raw);
 		return NULL;
 	}
 
@@ -178,10 +179,10 @@ unsigned char QRraw_getCode(QRRawCode *raw)
 void QRraw_free(QRRawCode *raw)
 {
 	if(raw != NULL) {
-		free(raw->datacode);
-		free(raw->ecccode);
-		free(raw->rsblock);
-		free(raw);
+		qrenc_alloc.free(raw->datacode);
+		qrenc_alloc.free(raw->ecccode);
+		qrenc_alloc.free(raw->rsblock);
+		qrenc_alloc.free(raw);
 	}
 }
 
@@ -271,7 +272,7 @@ QRcode *QRcode_new(int version, int width, unsigned char *data)
 {
 	QRcode *qrcode;
 
-	qrcode = (QRcode *)malloc(sizeof(QRcode));
+	qrcode = (QRcode *)qrenc_alloc.malloc(sizeof(QRcode));
 	if(qrcode == NULL) return NULL;
 
 	qrcode->version = version;
@@ -284,8 +285,8 @@ QRcode *QRcode_new(int version, int width, unsigned char *data)
 void QRcode_free(QRcode *qrcode)
 {
 	if(qrcode != NULL) {
-		free(qrcode->data);
-		free(qrcode);
+		qrenc_alloc.free(qrcode->data);
+		qrenc_alloc.free(qrcode);
 	}
 }
 
@@ -348,7 +349,7 @@ QRcode *QRcode_encodeMask(QRinput *input, int mask)
 
 	/* masking */
 	if(mask == -2) { // just for debug purpose
-		masked = (unsigned char *)malloc((size_t)(width * width));
+		masked = (unsigned char *)qrenc_alloc.malloc((size_t)(width * width));
 		memcpy(masked, frame, (size_t)(width * width));
 	} else if(mask < 0) {
 		masked = Mask_mask(width, frame);
@@ -360,12 +361,12 @@ QRcode *QRcode_encodeMask(QRinput *input, int mask)
 	}
 	qrcode = QRcode_new(version, width, masked);
 	if(qrcode == NULL) {
-		free(masked);
+		qrenc_alloc.free(masked);
 	}
 
 EXIT:
 	QRraw_free(raw);
-	free(frame);
+	qrenc_alloc.free(frame);
 	return qrcode;
 }
 

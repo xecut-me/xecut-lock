@@ -34,13 +34,13 @@ BitStream *BitStream_new(void)
 {
 	BitStream *bstream;
 
-	bstream = (BitStream *)malloc(sizeof(BitStream));
+	bstream = (BitStream *)qrenc_alloc.malloc(sizeof(BitStream));
 	if(bstream == NULL) return NULL;
 
 	bstream->length = 0;
-	bstream->data = (unsigned char *)malloc(DEFAULT_BUFSIZE);
+	bstream->data = (unsigned char *)qrenc_alloc.malloc(DEFAULT_BUFSIZE);
 	if(bstream->data == NULL) {
-		free(bstream);
+		qrenc_alloc.free(bstream);
 		return NULL;
 	}
 	bstream->datasize = DEFAULT_BUFSIZE;
@@ -52,7 +52,7 @@ static int BitStream_expand(BitStream *bstream)
 {
 	unsigned char *data;
 
-	data = (unsigned char *)realloc(bstream->data, bstream->datasize * 2);
+	data = (unsigned char *)qrenc_alloc.realloc(bstream->data, bstream->datasize * 2);
 	if(data == NULL) {
 		return -1;
 	}
@@ -167,7 +167,7 @@ unsigned char *BitStream_toByte(BitStream *bstream)
 	if(size == 0) {
 		return NULL;
 	}
-	data = (unsigned char *)malloc((size + 7) / 8);
+	data = (unsigned char *)qrenc_alloc.malloc((size + 7) / 8);
 	if(data == NULL) {
 		return NULL;
 	}
@@ -201,7 +201,7 @@ unsigned char *BitStream_toByte(BitStream *bstream)
 void BitStream_free(BitStream *bstream)
 {
 	if(bstream != NULL) {
-		free(bstream->data);
-		free(bstream);
+		qrenc_alloc.free(bstream->data);
+		qrenc_alloc.free(bstream);
 	}
 }
