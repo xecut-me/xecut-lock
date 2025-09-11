@@ -25,6 +25,9 @@ static K_SEM_DEFINE(sem_ipv4, 0, 1);
 
 static int wifi_wait_for_ip_address(void);
 
+static void wifi_reconnect(struct k_work *work);
+K_WORK_DELAYABLE_DEFINE(wifi_reconnect_work, wifi_reconnect);
+
 static void on_wifi_conn_event(
     struct net_mgmt_event_callback *cb,
     uint64_t mgmt_event,
@@ -42,9 +45,7 @@ static void on_wifi_conn_event(
     }
     else if (mgmt_event == NET_EVENT_WIFI_DISCONNECT_RESULT) {
         k_sem_take(&sem_wifi, K_NO_WAIT);
-
-        k_sleep(RECONNECT_DELAY);
-        wifi_connect();
+        k_work_schedule(&wifi_reconnect_work, RECONNECT_DELAY);
     }
     else {
         LOG_WRN("Unhandled WiFi event: %lld", mgmt_event);
@@ -58,9 +59,11 @@ static void on_ipv4_event(
 ) {
     if (mgmt_event == NET_EVENT_IPV4_ADDR_ADD) {
         LOG_DBG("IPv4 address added");
+        k_sem_give(&sem_ipv4);
     } 
     else if (mgmt_event == NET_EVENT_IPV4_ADDR_DEL) {
         LOG_DBG("IPv4 address removed");
+        k_sem_take(&sem_ipv4, K_NO_WAIT);
     }
     else if (mgmt_event == NET_EVENT_IPV4_DHCP_BOUND) {
         LOG_DBG("DHCP bound - IP address received");
@@ -161,4 +164,15 @@ static int wifi_wait_for_ip_address(void) {
     LOG_INF("Device IP address is %s", ip_addr);
 
     return 0;
+}
+
+static void wifi_reconnect(struct k_work *work) {
+    int ret = wifi_connect();
+    if (ret) {
+        LOG_ERR("Failed to reconnect to WiFi '%s' with status %s (%d)", wifi_creds.ssid, strerror(ret), ret);
+    }
+
+    // After an unsuccessful connection attempt on the ESP32S3, the event
+    // NET_EVENT_WIFI_DISCONNECT_RESULT will occur with a status=-1,
+    // and a new connection attempt will take place in the function on_wifi_conn_event.
 }
