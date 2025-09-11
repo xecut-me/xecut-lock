@@ -1,5 +1,5 @@
 #pragma once
 
-void wifi_init(void);
-int wifi_connect(char *ssid, char *psk);
-int wifi_get_status(void);
+void wifi_init(char *ssid, char *psk);
+
+int wifi_connect(void);
