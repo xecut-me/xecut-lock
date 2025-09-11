@@ -17,7 +17,6 @@
 #include "sntp.h"
 #include "otp.h"
 #include "keypad.h"
-#include "libqrencode/zephyr.h"
 
 LOG_MODULE_REGISTER(MAIN);
 
