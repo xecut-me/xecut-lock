@@ -37,13 +37,19 @@ static void on_wifi_conn_event(
 
     if (mgmt_event == NET_EVENT_WIFI_CONNECT_RESULT) {
         if (status->status) {
-            LOG_ERR("Failed to connect to WiFi with status: %d", status->status);
+            LOG_ERR("Failed to connect to WiFi with status code %d", status->status);
         } else {
             LOG_INF("Successfully connected to WiFi '%s'", wifi_creds.ssid);
             k_sem_give(&sem_wifi);
         }
     }
     else if (mgmt_event == NET_EVENT_WIFI_DISCONNECT_RESULT) {
+        if (status->status == -1) {
+            LOG_WRN("WiFi network not found, connection failed");
+        } else {
+            LOG_WRN("WiFi connection lost");
+        }
+
         k_sem_take(&sem_wifi, K_NO_WAIT);
         k_work_schedule(&wifi_reconnect_work, RECONNECT_DELAY);
     }
@@ -169,7 +175,7 @@ static int wifi_wait_for_ip_address(void) {
 static void wifi_reconnect(struct k_work *work) {
     int ret = wifi_connect();
     if (ret) {
-        LOG_ERR("Failed to reconnect to WiFi '%s' with status %s (%d)", wifi_creds.ssid, strerror(ret), ret);
+        LOG_ERR("Failed to reconnect to WiFi '%s': %s (%d)", wifi_creds.ssid, strerror(ret), ret);
     }
 
     // After an unsuccessful connection attempt on the ESP32S3, the event
