@@ -1,223 +1,112 @@
+#include <byteswap.h>
+#include <ctype.h>
+#include <math.h>
+#include <stddef.h>
 #include <stdint.h>
 #include <stdio.h>
-#include <mbedtls/md.h>
-#include <byteswap.h>
-#include <math.h>
-#include <zephyr/sys/util.h>
-#include <stdint.h>
-#include <stddef.h>
-#include <ctype.h>
-
-#include <zephyr/settings/settings.h>
-#include <zephyr/shell/shell.h>
-#include <zephyr/timing/timing.h>
 #include <stdlib.h>
 #include <time.h>
 
+#include <mbedtls/md.h>
+#include <mbedtls/pkcs5.h>
+#include <zephyr/sys/util.h>
+#include <zephyr/settings/settings.h>
+#include <zephyr/logging/log.h>
+
+LOG_MODULE_REGISTER(otp, 4);
+
+#ifdef CONFIG_TIMING_FUNCTIONS
+#include <zephyr/timing/timing.h>
+#endif
+
 #include "otp.h"
 
-#define CONFIG_OTP_MAX_SAVED 10
+#define CONFIG_KDF_KEY_NAME "kdf_secret"
+#define CONFIG_KDF_KEY_MAX_SIZE 16
+#define CONFIG_KDF_ROUNDS 4000
+#define CONFIG_OTP_KEY_SIZE 0x30
+#define CONFIG_OTP_DIGITS 6
+#define CONFIG_OTP_TIMESTEP 30
 
-struct otp_key_info otp_cache[CONFIG_OTP_MAX_SAVED];
+uint32_t otp_truncate(const uint8_t *digest, uint8_t digits) {
+  uint64_t offset;
+  uint32_t bin_code;
 
-size_t base32_decode(const char* input, uint8_t* output, size_t max_output) {
-    uint32_t buffer = 0;
-    int bits_left = 0;
-    size_t out_len = 0;
+  offset = digest[19] & 0x0f;
+  bin_code =
+      (digest[offset] & 0x7fu) << 24u | (digest[offset + 1u] & 0xffu) << 16u |
+      (digest[offset + 2u] & 0xffu) << 8u | (digest[offset + 3u] & 0xffu);
 
-    while (*input && out_len < max_output) {
-        char c = toupper((unsigned char)*input++);
-        uint8_t val;
-
-        if (c >= 'A' && c <= 'Z') {
-            val = c - 'A';
-        } else if (c >= '2' && c <= '7') {
-            val = c - '2' + 26;
-        } else if (c == '=') {
-            break;  // padding character
-        } else {
-            continue;  // skip invalid chars like spaces or dashes
-        }
-
-        buffer = (buffer << 5) | val;
-        bits_left += 5;
-
-        if (bits_left >= 8) {
-            bits_left -= 8;
-            output[out_len++] = (uint8_t)((buffer >> bits_left) & 0xFF);
-        }
-    }
-
-    return out_len;
-}
-
-uint32_t otp_truncate(const uint8_t *digest, uint8_t digits){
-	uint64_t offset;
-	uint32_t bin_code;
-
-	offset = digest[19] & 0x0f;
-	bin_code = (digest[offset] & 0x7fu) << 24u
-               | (digest[offset+1u] & 0xffu) << 16u
-               | (digest[offset+2u] & 0xffu) << 8u
-               | (digest[offset+3u] & 0xffu);
-
-    return bin_code % (int)pow(10,digits);
-
+  return bin_code % (int)pow(10, digits);
 };
 
-uint32_t _get_otp(uint8_t key[], uint8_t key_len, uint8_t digits, uint64_t step){
-	uint8_t digest[128];
+uint32_t _get_otp(uint8_t key[], uint8_t key_len, uint8_t digits,
+                  uint64_t step) {
+  uint8_t digest[128];
 #if __BYTE_ORDER__ == __ORDER_LITTLE_ENDIAN__
-  #ifndef bswap_64
-    #define bswap_64(x)			\
-    ((((x) & 0xff00000000000000ull) >> 56)	\
-    | (((x) & 0x00ff000000000000ull) >> 40)	\
-    | (((x) & 0x0000ff0000000000ull) >> 24)	\
-    | (((x) & 0x000000ff00000000ull) >> 8)	\
-    | (((x) & 0x00000000ff000000ull) << 8)	\
-    | (((x) & 0x0000000000ff0000ull) << 24)	\
-    | (((x) & 0x000000000000ff00ull) << 40)	\
-    | (((x) & 0x00000000000000ffull) << 56))
-  #endif
-  step=bswap_64(step);
-  #endif
+#ifndef bswap_64
+#define bswap_64(x)                                                            \
+  ((((x) & 0xff00000000000000ull) >> 56) |                                     \
+   (((x) & 0x00ff000000000000ull) >> 40) |                                     \
+   (((x) & 0x0000ff0000000000ull) >> 24) |                                     \
+   (((x) & 0x000000ff00000000ull) >> 8) |                                      \
+   (((x) & 0x00000000ff000000ull) << 8) |                                      \
+   (((x) & 0x0000000000ff0000ull) << 24) |                                     \
+   (((x) & 0x000000000000ff00ull) << 40) |                                     \
+   (((x) & 0x00000000000000ffull) << 56))
+#endif
+  step = bswap_64(step);
+#endif
 
-  mbedtls_md_hmac(mbedtls_md_info_from_type(MBEDTLS_MD_SHA1), key, key_len , (const unsigned char*)&step, sizeof(step), digest);
-  return otp_truncate(digest,6);
+  mbedtls_md_hmac(mbedtls_md_info_from_type(MBEDTLS_MD_SHA1), key, key_len,
+                  (const unsigned char *)&step, sizeof(step), digest);
+  return otp_truncate(digest, CONFIG_OTP_DIGITS);
 };
 
-static int otp_load_cb(const char* key, size_t len, settings_read_cb read_cb, void *cb_arg, void *param){
-	struct otp_key_info *info = param;
-	strcpy(info->name,key);
-	info->key_len = len;
-	read_cb(cb_arg,info->key,len);
-	printf("OTP key loaded for %s: len %d\n",info->name,info->key_len);
-	printf("%d %lld",info->digits,info->step);
-	info->code = _get_otp(info->key,info->key_len,info->digits,info->step);
-	return 0;
-};
 
-uint32_t get_otp(uint64_t step){
-	struct otp_key_info info = {
-		.digits=6,
-		.step = step
-	};
-	settings_load_subtree_direct("otp",otp_load_cb,&info);
-	return info.code ;//_get_otp(info.key,info.key_len,6,step);
+
+uint8_t kdf_key[CONFIG_KDF_KEY_MAX_SIZE];
+size_t kdf_key_size = 0;
+
+bool otp_verify_kdf(char *uid, size_t uid_len, char *code, size_t code_len) {
+  struct timespec tp;
+  uint8_t otp_key[CONFIG_OTP_KEY_SIZE];
+  sys_clock_gettime(SYS_CLOCK_REALTIME, &tp);
+  uint32_t i_code = atoi(code);
+  uint64_t step = ( tp.tv_sec / CONFIG_OTP_TIMESTEP);
+  LOG_WRN("checking otp: uid=%s code=%06d\n",uid,i_code);
+#ifdef CONFIG_TIMING_FUNCTIONS
+  timing_start();
+  timing_t start, end;
+  start = timing_counter_get();
+#endif
+  mbedtls_pkcs5_pbkdf2_hmac_ext(MBEDTLS_MD_SHA1, uid, uid_len, kdf_key,
+                                kdf_key_size, CONFIG_KDF_ROUNDS, sizeof(otp_key), otp_key);
+
+  uint32_t otp = _get_otp(otp_key, sizeof(otp_key), CONFIG_OTP_DIGITS, step);
+  bool valid = otp == i_code;
+  LOG_DBG("code for %s step %llu is %06d/%06d (%d)\n", uid, step, i_code, otp, valid);
+#ifdef CONFIG_TIMING_FUNCTIONS
+  end = timing_counter_get();
+  timing_stop();
+  LOG_DBG("time: %lld\n", timing_cycles_to_ns(timing_cycles_get(&start, &end)));
+#endif
+  return valid;
 }
-static int otp_verify_cb(const char* key, size_t len, settings_read_cb read_cb, void *cb_arg, void *param){
-	struct otp_key_info *info = param;
-	if (key){
-		strcpy(info->name,key);
-	}
-	info->key_len = len;
-	read_cb(cb_arg,info->key,len);
-	printf("OTP key loaded for %s: len %d\n",info->name,info->key_len);
-	printf("%d %lld\n",info->digits,info->step);
-	uint32_t otp = _get_otp(info->key,info->key_len,info->digits,info->step);
-	info->valid = info->code == otp;
-	printf("code for %s is %06d/%06d (%d)\n",info->name,info->code,otp,info->valid);
-	return info->valid;
-};
 
-// static int cmd_verify(const struct shell *sh, size_t argc, char **argv)
-// {
-// 	shell_print(sh, "argc = %zd", argc);
-// 	for (size_t cnt = 0; cnt < argc; cnt++) {
-// 		shell_print(sh, "argv[%zd]", cnt);
-// 		shell_hexdump(sh, argv[cnt], strlen(argv[cnt]));
-// 	}
-// 	timing_init();
-// 	struct timespec tp;
-// 	sys_clock_gettime(SYS_CLOCK_REALTIME,&tp);
-// 	char path[128] = "otp";
-// 	struct otp_key_info info = {
-// 		.digits=6,
-// 		.step = tp.tv_sec/30,
-// 		.code = atoi(argv[1])
-// 	};
-// 	if (argc>2){
-// 		snprintf(path,128,"otp/%s",argv[2]);
-// 		strncpy(info.name,argv[2],16);
-// 	}
-// 	shell_print(sh, "path= %s", path);
-// 	shell_print(sh, "current time: %s",ctime(&tp.tv_sec));
-// 	timing_start();
-// 	timing_t start,end;
-// 	start = timing_counter_get();
-// 	settings_load_subtree_direct(path,otp_verify_cb,&info);
-// 	end = timing_counter_get();
-// 	timing_stop();
-// 	printf("time: %lld\n",timing_cycles_to_ns(timing_cycles_get(&start,&end)));
-// 	shell_print(sh, "result= %d", info.valid);
-// 	return 0;
-// }
-#include <mbedtls/pkcs5.h>
-extern uint8_t kdf_key[16] ;
-
-
-// bool otp_verify_kdf(char* uid, size_t uid_len, char* code, size_t code_len){
-// 	struct timespec tp;
-// 	sys_clock_gettime(SYS_CLOCK_REALTIME,&tp);
-// 	struct otp_key_info info = {
-// 		.digits=6,
-// 		.step = tp.tv_sec/30,
-// 		.code = atoi(code),
-// 		.key_len = 0x30
-// 	};
-// 	strncpy(info.name,uid,uid_len<16? uid_len:16);
-
-// 	timing_start();
-// 	timing_t start,end;
-// 	start = timing_counter_get();
-// 	mbedtls_pkcs5_pbkdf2_hmac_ext(MBEDTLS_MD_SHA1,
-// 								  uid,uid_len,
-// 								  kdf_key, sizeof(kdf_key),
-// 								  4000 ,
-// 							   info.key_len, info.key);
-
-// 	uint32_t otp = _get_otp(info.key,info.key_len,info.digits,info.step);
-// 	info.valid = info.code == otp;
-// 	printf("code for %s is %06d/%06d (%d)\n",info.name,info.code,otp,info.valid);
-// 	end = timing_counter_get();
-// 	timing_stop();
-// 	printf("time: %lld\n",timing_cycles_to_ns(timing_cycles_get(&start,&end)));
-// 	return info.valid;
-// }
-
-// static int cmd_verify_kdf(const struct shell *sh, size_t argc, char **argv)
-// {
-
-// 	struct timespec tp;
-// 	sys_clock_gettime(SYS_CLOCK_REALTIME,&tp);
-// 	struct otp_key_info info = {
-// 		.digits=6,
-// 		.step = tp.tv_sec/30,
-// 		.code = atoi(argv[2]),
-// 		.key_len = 0x30
-// 	};
-// 	strncpy(info.name,argv[1],16);
-
-// 	timing_start();
-// 	timing_t start,end;
-// 	start = timing_counter_get();
-// 	mbedtls_pkcs5_pbkdf2_hmac_ext(MBEDTLS_MD_SHA1,
-// 								  argv[1],strlen(argv[1]),
-// 								  kdf_key, sizeof(kdf_key),
-// 								  4000 ,
-// 								  info.key_len, info.key);
-
-// 	uint32_t otp = _get_otp(info.key,info.key_len,info.digits,info.step);
-// 	info.valid = info.code == otp;
-// 	printf("code for %s is %06d/%06d (%d)\n",info.name,info.code,otp,info.valid);
-// 	end = timing_counter_get();
-// 	timing_stop();
-// 	shell_hexdump(sh, info.key, info.key_len);
-// 	printf("time: %lld\n",timing_cycles_to_ns(timing_cycles_get(&start,&end)));
-// 	shell_print(sh, "result= %d", info.valid);
-// 	return 0;
-// }
-
-// SHELL_CMD_ARG_REGISTER(verify, NULL, "Verify OTP code.\n verify code [name]", cmd_verify, 2, 1);
-
-// SHELL_CMD_ARG_REGISTER(verify_kdf, NULL, "Verify OTP code.\n verify userid code ", cmd_verify_kdf, 3, 0);
+int otp_init() {
+  int ret;
+  ret = settings_subsys_init();
+  if (ret) {
+    LOG_DBG("settings subsys initialization: fail (err %d)\n", ret);
+    return ret;
+  }
+  LOG_DBG("settings subsys initialization: OK.\n");
+  kdf_key_size =
+      settings_load_one(CONFIG_KDF_KEY_NAME, kdf_key, sizeof(kdf_key));
+    LOG_DBG("Loaded %d bytes from %s",kdf_key_size,CONFIG_KDF_KEY_NAME);
+  if (kdf_key_size != CONFIG_KDF_KEY_MAX_SIZE) {
+        LOG_WRN("Saved KDF key is less than configured %d/%d",kdf_key_size,CONFIG_KDF_KEY_MAX_SIZE);
+    }
+    return 0;
+}

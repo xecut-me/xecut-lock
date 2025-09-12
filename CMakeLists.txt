@@ -14,8 +14,8 @@ set(SOURCES
     src/keypad.c
 )
 
-file(GLOB LIBQRENCODE_SOURCES "src/libqrencode/*.c")
+# file(GLOB LIBQRENCODE_SOURCES "src/libqrencode/*.c")
 
-list(APPEND SOURCES ${LIBQRENCODE_SOURCES})
+# list(APPEND SOURCES ${LIBQRENCODE_SOURCES})
 
 target_sources(app PRIVATE ${SOURCES})
