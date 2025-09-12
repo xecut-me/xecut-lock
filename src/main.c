@@ -37,6 +37,10 @@ LOG_MODULE_REGISTER(MAIN, 4);
 #include <mbedtls/pkcs5.h>
 #define CONFIG_KDF_KEY_NAME "kdf_secret"
 #define CONFIG_KDF_KEY_MAX_SIZE 16
+#define CONFIG_KDF_ROUNDS 4000
+#define CONFIG_OTP_KEY_SIZE 0x30
+#define CONFIG_OTP_DIGITS 6
+#define CONFIG_OTP_TIMESTEP 30
 extern uint8_t kdf_key[CONFIG_KDF_KEY_MAX_SIZE];
 extern size_t kdf_key_size;
 
@@ -50,13 +54,17 @@ void trigger_lock(){
 
 
 bool command_test(uint8_t *cmd, size_t cmd_len) {
-    printf("command: %s\n", cmd);
-    uint8_t otp_key[0x30];
-    mbedtls_pkcs5_pbkdf2_hmac_ext(MBEDTLS_MD_SHA1, cmd, cmd_len, kdf_key, kdf_key_size, 4000, sizeof(otp_key), otp_key);
-    for (int i=0;i<sizeof(otp_key);i++){
-        printf("%02x",otp_key[i]);
-    }
-    printf("\ndone\n");
+    // printf("key_size =%d \n cmd_len= %d\ncommand=%s\n",kdf_key_size cmd_len, cmd);
+    // for (int i=0;i<kdf_key_size;i++){
+    //     printf("%02x",kdf_key[i]);
+    // }
+    // printf("\n");
+    // uint8_t otp_key[CONFIG_OTP_KEY_SIZE];
+    // mbedtls_pkcs5_pbkdf2_hmac_ext(MBEDTLS_MD_SHA1, cmd, cmd_len, kdf_key, kdf_key_size, CONFIG_KDF_ROUNDS, sizeof(otp_key), otp_key);
+    // for (int i=0;i<sizeof(otp_key);i++){
+    //     printf("%02x",otp_key[i]);
+    // }
+    // printf("\ndone\n");
     if (!strcmp(cmd,"TST")){
         trigger_lock();
     }
@@ -83,19 +91,14 @@ int main(void) {
         return 0;
     }
 
-    wifi_init();
-    
-    ret = wifi_connect(WIFI_SSID, WIFI_PSK);
+    wifi_init(WIFI_SSID, WIFI_PSK);
+
+    ret = wifi_connect();
     if (ret) {
         LOG_ERR("Failed to connect to WiFi: %d", ret);
         return 0;
     }
     
-    ret = wifi_get_status();
-    if (ret) {
-        LOG_ERR("Failed to get WiFi status: %d", ret);
-        return 0;
-    }
     try_sync_time();
 
     #define UART_NODE DT_CHOSEN(xecut_keypad)

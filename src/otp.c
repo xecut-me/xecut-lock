@@ -23,6 +23,7 @@ LOG_MODULE_REGISTER(otp, 4);
 
 #define CONFIG_KDF_KEY_NAME "kdf_secret"
 #define CONFIG_KDF_KEY_MAX_SIZE 16
+#define CONFIG_KDF_ROUNDS 4000
 #define CONFIG_OTP_KEY_SIZE 0x30
 #define CONFIG_OTP_DIGITS 6
 #define CONFIG_OTP_TIMESTEP 30
@@ -59,7 +60,7 @@ uint32_t _get_otp(uint8_t key[], uint8_t key_len, uint8_t digits,
 
   mbedtls_md_hmac(mbedtls_md_info_from_type(MBEDTLS_MD_SHA1), key, key_len,
                   (const unsigned char *)&step, sizeof(step), digest);
-  return otp_truncate(digest, 6);
+  return otp_truncate(digest, CONFIG_OTP_DIGITS);
 };
 
 
@@ -69,9 +70,10 @@ size_t kdf_key_size = 0;
 
 bool otp_verify_kdf(char *uid, size_t uid_len, char *code, size_t code_len) {
   struct timespec tp;
-  uint8_t otp_key[0x30];
+  uint8_t otp_key[CONFIG_OTP_KEY_SIZE];
   sys_clock_gettime(SYS_CLOCK_REALTIME, &tp);
   uint32_t i_code = atoi(code);
+  uint64_t step = ( tp.tv_sec / CONFIG_OTP_TIMESTEP);
   LOG_WRN("checking otp: uid=%s code=%06d\n",uid,i_code);
 #ifdef CONFIG_TIMING_FUNCTIONS
   timing_start();
@@ -79,11 +81,11 @@ bool otp_verify_kdf(char *uid, size_t uid_len, char *code, size_t code_len) {
   start = timing_counter_get();
 #endif
   mbedtls_pkcs5_pbkdf2_hmac_ext(MBEDTLS_MD_SHA1, uid, uid_len, kdf_key,
-                                kdf_key_size, 4000, sizeof(otp_key), otp_key);
+                                kdf_key_size, CONFIG_KDF_ROUNDS, sizeof(otp_key), otp_key);
 
-  uint32_t otp = _get_otp(otp_key, sizeof(otp_key), CONFIG_OTP_DIGITS, (CONFIG_OTP_TIMESTEP / 30));
+  uint32_t otp = _get_otp(otp_key, sizeof(otp_key), CONFIG_OTP_DIGITS, step);
   bool valid = otp == i_code;
-  LOG_DBG("code for %s is %06d/%06d (%d)\n", uid, i_code, otp, valid);
+  LOG_DBG("code for %s step %llu is %06d/%06d (%d)\n", uid, step, i_code, otp, valid);
 #ifdef CONFIG_TIMING_FUNCTIONS
   end = timing_counter_get();
   timing_stop();
@@ -100,10 +102,11 @@ int otp_init() {
     return ret;
   }
   LOG_DBG("settings subsys initialization: OK.\n");
-  ssize_t kdf_key_size =
+  kdf_key_size =
       settings_load_one(CONFIG_KDF_KEY_NAME, kdf_key, sizeof(kdf_key));
+    LOG_DBG("Loaded %d bytes from %s",kdf_key_size,CONFIG_KDF_KEY_NAME);
   if (kdf_key_size != CONFIG_KDF_KEY_MAX_SIZE) {
-        LOG_WRN("Saved KDF key is less than configured %ld/%d",kdf_key_size,CONFIG_KDF_KEY_MAX_SIZE);
+        LOG_WRN("Saved KDF key is less than configured %d/%d",kdf_key_size,CONFIG_KDF_KEY_MAX_SIZE);
     }
     return 0;
 }
