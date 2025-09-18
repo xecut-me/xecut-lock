@@ -20,19 +20,20 @@
 #include "keypad.h"
 #include "zephyr/irq.h"
 
-#include <string.h>
+LOG_MODULE_REGISTER(MAIN, 4);
+
+// test
+#include "mqtt.h"
 
 // #define WIFI_SSID "CGA2121_7d2gR7y"
 // #define WIFI_PSK  "N4fzQqD9Tsv7rjy6bp"
-#define WIFI_SSID "xecut"
-#define WIFI_PSK  "themostsecurepassword"
+// #define WIFI_SSID "xecut"
+// #define WIFI_PSK  "themostsecurepassword"
+#define WIFI_SSID "MiFibra-BC64"
+#define WIFI_PSK  "CXn45uUa"
 
-#define RELAY0_NODE DT_CHOSEN(xecut_relay0)
-static const struct gpio_dt_spec relay0 = GPIO_DT_SPEC_GET(RELAY0_NODE, gpios);
-
-
-#include <zephyr/logging/log.h>
-LOG_MODULE_REGISTER(MAIN, 4);
+// #define RELAY0_NODE DT_CHOSEN(xecut_relay0)
+// static const struct gpio_dt_spec relay0 = GPIO_DT_SPEC_GET(RELAY0_NODE, gpios);
 
 #include <mbedtls/pkcs5.h>
 #define CONFIG_KDF_KEY_NAME "kdf_secret"
@@ -45,11 +46,11 @@ extern uint8_t kdf_key[CONFIG_KDF_KEY_MAX_SIZE];
 extern size_t kdf_key_size;
 
 void trigger_lock(){
-    unsigned int key = irq_lock();
-    gpio_pin_set_dt(&relay0, 1);
-    k_busy_wait(200000);
-    gpio_pin_set_dt(&relay0, 0);
-    irq_unlock(key);
+    // unsigned int key = irq_lock();
+    // gpio_pin_set_dt(&relay0, 1);
+    // k_busy_wait(200000);
+    // gpio_pin_set_dt(&relay0, 0);
+    // irq_unlock(key);
 }
 
 
@@ -65,9 +66,9 @@ bool command_test(uint8_t *cmd, size_t cmd_len) {
     //     printf("%02x",otp_key[i]);
     // }
     // printf("\ndone\n");
-    if (!strcmp(cmd,"TST")){
-        trigger_lock();
-    }
+    // if (!strcmp(cmd,"TST")){
+    //     trigger_lock();
+    // }
 
     return 1;
 }
@@ -82,14 +83,15 @@ bool checkin_test(uint8_t *uid, size_t uid_len, uint8_t *code, size_t code_len) 
 
 int main(void) {
     int ret;
-    if (!gpio_is_ready_dt(&relay0)) {
-        return 0;
-    }
 
-    ret = gpio_pin_configure_dt(&relay0, GPIO_OUTPUT_INACTIVE);
-    if (ret < 0) {
-        return 0;
-    }
+    // if (!gpio_is_ready_dt(&relay0)) {
+    //     return 0;
+    // }
+
+    // ret = gpio_pin_configure_dt(&relay0, GPIO_OUTPUT_INACTIVE);
+    // if (ret < 0) {
+    //     return 0;
+    // }
 
     wifi_init(WIFI_SSID, WIFI_PSK);
 
@@ -99,19 +101,27 @@ int main(void) {
         return 0;
     }
     
-    try_sync_time();
+    // try_sync_time();
 
-    #define UART_NODE DT_CHOSEN(xecut_keypad)
-    const struct device *uart = DEVICE_DT_GET(UART_NODE);
+    // #define UART_NODE DT_CHOSEN(xecut_keypad)
+    // const struct device *uart = DEVICE_DT_GET(UART_NODE);
 
-    struct keypad *kp = k_malloc(sizeof(struct keypad));
-    struct keypad_callbacks kp_callbacks = {
-        .command = command_test,
-        .checkin = checkin_test,
-    };
-    __ASSERT(kp != NULL, "cannot alloc kp");
-    keypad_init(uart, kp_callbacks, kp);
-    otp_init();
+    // struct keypad *kp = k_malloc(sizeof(struct keypad));
+    // struct keypad_callbacks kp_callbacks = {
+    //     .command = command_test,
+    //     .checkin = checkin_test,
+    // };
+    // __ASSERT(kp != NULL, "cannot alloc kp");
+    // keypad_init(uart, kp_callbacks, kp);
+    // otp_init();
+
+    mqtt_init("192.168.1.126", 1883, NULL, NULL);
+    mqtt_run();
+
+    for (;;) {
+        mqtt_test();
+        k_msleep(2500);
+    }
 
     return 0;
 }

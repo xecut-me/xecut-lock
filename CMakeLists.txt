@@ -12,6 +12,7 @@ set(SOURCES
     src/sntp.c
     src/otp.c
     src/keypad.c
+    src/mqtt.c
 )
 
 # file(GLOB LIBQRENCODE_SOURCES "src/libqrencode/*.c")
