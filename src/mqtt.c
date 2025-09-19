@@ -204,9 +204,19 @@ void mqtt_test(void) {
     ret = mqtt_ping(&client.client);
     LOG_INF("Ping result: %d", ret);
 
-    char buffer[256] = {0};
-    snprintf((char*)&buffer, sizeof(buffer), "{\"value\": \"%d\"}", sys_rand32_get());
+    int qos = 2;
 
-    ret = publish("xecut-lock/test/hop/hey/wtf", &buffer, MQTT_QOS_2_EXACTLY_ONCE);
+    char buffer[256] = {0};
+    snprintf((char*)&buffer, sizeof(buffer), "{\"value\": \"%d\", \"qos\": \"%d\"}", sys_rand32_get(), qos);
+
+    ret = publish("xecut-lock/test/hop/hey/wtf", (char *)&buffer, qos);
     LOG_INF("Publish result: %d", ret);
+
+    // Temporary hack to fix message sending with QOS 2.
+    // Must be in separate thread
+    for (int i = 0; i < 30; i++) {
+        mqtt_input(&client.client);
+        mqtt_live(&client.client);
+        k_sleep(K_MSEC(100));
+    }
 }
