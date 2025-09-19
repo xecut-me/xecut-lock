@@ -44,7 +44,24 @@ static void mqtt_evt_handler(
             connected = false;
             clear_fds();
             break;
-        
+
+        case MQTT_EVT_PUBREC:
+            if (evt->result != 0) {
+                LOG_ERR("MQTT PUBREC error %d", evt->result);
+                break;
+            }
+
+            const struct mqtt_pubrel_param rel_param = {
+                .message_id = evt->param.pubrec.message_id
+            };
+
+            int ret = mqtt_publish_qos2_release(client, &rel_param);
+            if (ret != 0) {
+                LOG_ERR("mqtt_publish_qos2_release failed with status code %d", ret);
+            }
+
+            break;
+
         default:
             break;
     }
@@ -165,8 +182,8 @@ void mqtt_test(void) {
     LOG_INF("Ping result: %d", ret);
 
     char buffer[256] = {0};
-    snprintf(&buffer, sizeof(buffer), "{\"value\": \"%d\"}", sys_rand32_get());
+    snprintf((char*)&buffer, sizeof(buffer), "{\"value\": \"%d\"}", sys_rand32_get());
 
-    ret = publish("xecut-lock/test/hop/hey/wtf", &buffer, MQTT_QOS_0_AT_MOST_ONCE);
+    ret = publish("xecut-lock/test/hop/hey/wtf", &buffer, MQTT_QOS_2_EXACTLY_ONCE);
     LOG_INF("Publish result: %d", ret);
 }
