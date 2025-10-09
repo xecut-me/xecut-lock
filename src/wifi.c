@@ -220,9 +220,10 @@ static void wifi_thread(void *unused1, void *unused2, void *unused3) {
                 ret = wifi_connect();
                 if (ret) {
                     LOG_WRN("Failed to send connection request: %d", ret);
-                    k_msgq_put(&wifi.evtq, &event, K_FOREVER);
-                }
 
+                    const enum wifi_event retry_event = WIFI_EVENT_CONNECTION_FAILED;
+                    k_msgq_put(&wifi.evtq, &retry_event, K_FOREVER);
+                }
                 break;
 
             case WIFI_EVENT_IP_ADDRESS_RECEIVED:
