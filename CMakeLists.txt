@@ -12,6 +12,7 @@ set(SOURCES
     src/sntp.c
     src/otp.c
     src/keypad.c
+    src/mqtt.c
 )
 
 target_sources(app PRIVATE ${SOURCES})
