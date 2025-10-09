@@ -37,8 +37,9 @@ K_THREAD_STACK_DEFINE(wifi_thread_stack_area, 2048);
 const int wifi_thread_priority = 2;
 struct k_thread wifi_thread_data;
 
-void start_wifi_thread(void);
-void wifi_thread(void *unused1, void *unused2, void *unused3);
+static void setup_wifi_evtq(void);
+static void start_wifi_thread(void);
+static void wifi_thread(void *unused1, void *unused2, void *unused3);
 
 static void on_wifi_conn_event(
     struct net_mgmt_event_callback *cb,
@@ -100,7 +101,7 @@ static void on_ipv4_event(
     k_msgq_put(&wifi.evtq, &event, K_FOREVER);
 }
 
-int wifi_connect(void) {
+static int wifi_connect(void) {
     struct net_if *iface = net_if_get_default();
 
     struct wifi_connect_req_params params = {
@@ -117,7 +118,7 @@ int wifi_connect(void) {
     return net_mgmt(NET_REQUEST_WIFI_CONNECT, iface, &params, sizeof(params));
 }
 
-int wifi_disconnect(void) {
+static int wifi_disconnect(void) {
     struct net_if *iface = net_if_get_default();
 
     struct wifi_iface_status status;
@@ -147,6 +148,8 @@ int wifi_init(char *ssid, char *psk) {
     if (status == 0) return 0;
     if (status != ENOTCONN) return status;
 
+    if (wifi.init) return 0;
+
     net_mgmt_init_event_callback(
         &wifi.conn_cb,
         on_wifi_conn_event,
@@ -163,16 +166,8 @@ int wifi_init(char *ssid, char *psk) {
 
     net_mgmt_add_event_callback(&wifi.ipv4_cb);
 
-    if (!wifi.init) {
-        k_msgq_init(
-            &wifi.evtq,
-            (char*)&wifi.evtq_buffer,
-            sizeof(enum wifi_event),
-            sizeof(wifi.evtq_buffer) / sizeof(enum wifi_event)
-        );
-
-        start_wifi_thread();
-    }
+    setup_wifi_evtq();
+    start_wifi_thread();
 
     enum wifi_event wifi_event = WIFI_EVENT_SETUP_COMPLETE;
     k_msgq_put(&wifi.evtq, &wifi_event, K_FOREVER);
@@ -182,7 +177,16 @@ int wifi_init(char *ssid, char *psk) {
     return 0;
 }
 
-void start_wifi_thread(void) {
+static void setup_wifi_evtq(void) {
+    k_msgq_init(
+        &wifi.evtq,
+        (char*)&wifi.evtq_buffer,
+        sizeof(enum wifi_event),
+        sizeof(wifi.evtq_buffer) / sizeof(enum wifi_event)
+    );
+}
+
+static void start_wifi_thread(void) {
     if (wifi.tid) return;
 
     wifi.tid = k_thread_create(
@@ -193,7 +197,7 @@ void start_wifi_thread(void) {
         wifi_thread_priority, 0, K_NO_WAIT);
 }
 
-void wifi_thread(void *unused1, void *unused2, void *unused3) {
+static void wifi_thread(void *unused1, void *unused2, void *unused3) {
     int ret;
     enum wifi_event event;
 
