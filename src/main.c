@@ -1,11 +1,10 @@
 #include <zephyr/kernel.h>
+#include <zephyr/logging/log.h>
 #include <zephyr/net/socket.h>
-#include <zephyr/drivers/gpio.h>
 #include <zephyr/sys/clock.h>
 #include <zephyr/timing/timing.h>
 #include <zephyr/devicetree.h>
 #include <zephyr/drivers/uart.h>
-#include <zephyr/drivers/gpio.h>
 #include <zephyr/settings/settings.h>
 
 #include <mbedtls/md.h>
@@ -18,7 +17,7 @@
 #include "sntp.h"
 #include "otp.h"
 #include "keypad.h"
-#include "zephyr/irq.h"
+#include "doorlock.h"
 
 #include <string.h>
 
@@ -27,11 +26,6 @@
 #define WIFI_SSID "xecut"
 #define WIFI_PSK  "themostsecurepassword"
 
-#define RELAY0_NODE DT_CHOSEN(xecut_relay0)
-static const struct gpio_dt_spec relay0 = GPIO_DT_SPEC_GET(RELAY0_NODE, gpios);
-
-
-#include <zephyr/logging/log.h>
 LOG_MODULE_REGISTER(MAIN, 4);
 
 #include <mbedtls/pkcs5.h>
@@ -43,15 +37,6 @@ LOG_MODULE_REGISTER(MAIN, 4);
 #define CONFIG_OTP_TIMESTEP 30
 extern uint8_t kdf_key[CONFIG_KDF_KEY_MAX_SIZE];
 extern size_t kdf_key_size;
-
-void trigger_lock(){
-    unsigned int key = irq_lock();
-    gpio_pin_set_dt(&relay0, 1);
-    k_busy_wait(200000);
-    gpio_pin_set_dt(&relay0, 0);
-    irq_unlock(key);
-}
-
 
 bool command_test(uint8_t *cmd, size_t cmd_len) {
     // printf("key_size =%d \n cmd_len= %d\ncommand=%s\n",kdf_key_size cmd_len, cmd);
@@ -66,7 +51,7 @@ bool command_test(uint8_t *cmd, size_t cmd_len) {
     // }
     // printf("\ndone\n");
     if (!strcmp(cmd,"TST")){
-        trigger_lock();
+        doorlock_open();
     }
 
     return 1;
@@ -76,19 +61,21 @@ bool checkin_test(uint8_t *uid, size_t uid_len, uint8_t *code, size_t code_len) 
     printf("checkin, uid=%s code=%s\n", uid, code);
     bool ret = otp_verify_kdf(uid,uid_len,code,code_len);
     printf("checkin, ret=%d\n", ret);
-    if (ret) trigger_lock();
+    if (ret) doorlock_open();
     return 1;
 }
 
 int main(void) {
     int ret;
-    if (!gpio_is_ready_dt(&relay0)) {
-        return 0;
+
+    ret = doorlock_init();
+    if (ret) {
+        LOG_WRN("doorlock_init failed: %d", ret);
     }
 
-    ret = gpio_pin_configure_dt(&relay0, GPIO_OUTPUT_INACTIVE);
-    if (ret < 0) {
-        return 0;
+    ret = wifi_init(WIFI_SSID, WIFI_PSK);
+    if (ret) {
+        LOG_WRN("wifi_init failed: %d", ret);
     }
 
     wifi_init(WIFI_SSID, WIFI_PSK);

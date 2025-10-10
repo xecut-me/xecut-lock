@@ -4,13 +4,12 @@
 		zephyr,shell-uart = &usb_serial;
         zephyr,settings-partition = &storage_partition;
         xecut,keypad = &uart0;
-        xecut,relay0 = &relay0;
+        xecut,doorlock_relay = &doorlock_relay;
     };
-     relay0: relay0 {
-            compatible = "relay";
-            gpios = <&gpio0 14 GPIO_ACTIVE_HIGH>;
+    doorlock_relay: doorlock_relay {
+        compatible = "relay";
+        gpios = <&gpio0 14 GPIO_ACTIVE_HIGH>;
     };
-
 };
 
 &uart0 {

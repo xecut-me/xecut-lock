@@ -12,6 +12,7 @@ set(SOURCES
     src/sntp.c
     src/otp.c
     src/keypad.c
+    src/doorlock.c
     src/mqtt.c
 )
 

@@ -1,0 +1,13 @@
+menu "Xecut Lock Configuration"
+
+config REAL_RELAY
+    bool "Enable relay control over GPIO"
+    default n
+    help
+      This setting turns on the code to control the relay.
+      If it is off, the app will only write a log message for each action,
+      and the relay will not be used.
+
+endmenu
+
+source "$ZEPHYR_BASE/Kconfig"
