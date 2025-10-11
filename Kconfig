@@ -1,4 +1,4 @@
-menu "Xecut Lock Configuration"
+menu "Xecut Lock"
 
 config REAL_RELAY
     bool "Enable relay control over GPIO"
