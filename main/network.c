@@ -6,46 +6,25 @@
 #include <esp_eth_phy_w5500.h>
 #include <esp_eth_mac_w5500.h>
 #include <lwip/esp_netif_net_stack.h>
-#include <driver/gpio.h>
+
+#include "hardware.h"
 
 #define TAG "eth"
-
-#define SPI_HOST       1
-#define SPI_CLOCK_MHZ  12
-
-#define SPI_MOSI_GPIO  11
-#define SPI_MISO_GPIO  12
-#define SPI_SCLK_GPIO  13
-#define SPI_CS_GPIO    14
-#define SPI_INT_GPIO   10
-#define SPI_RST_GPIO   9
 
 const uint8_t MAC_ADDRESS[ETH_ADDR_LEN] = {
     0x0E, 0x00, 0xAF, 0x04, 0x38, 0x56
 };
 
-static void init_spi(void) {
-    spi_bus_config_t buscfg = {
-        .miso_io_num = SPI_MISO_GPIO,
-        .mosi_io_num = SPI_MOSI_GPIO,
-        .sclk_io_num = SPI_SCLK_GPIO,
-        .quadwp_io_num = -1,
-        .quadhd_io_num = -1,
-    };
-
-    ESP_ERROR_CHECK(spi_bus_initialize(SPI_HOST, &buscfg, SPI_DMA_CH_AUTO));
-}
-
 static esp_eth_mac_t *eth_w5500_get_mac(void) {
     spi_device_interface_config_t spi_devcfg = {
         .mode = 0,
-        .clock_speed_hz = SPI_CLOCK_MHZ * 1000 * 1000,
+        .clock_speed_hz = ETH_SPI_CLOCK_MHZ * 1000 * 1000,
         .queue_size = 24,
-        .spics_io_num = SPI_CS_GPIO
+        .spics_io_num = ETH_SPI_CS_GPIO
     };
 
-    eth_w5500_config_t w5500_config = ETH_W5500_DEFAULT_CONFIG(SPI_HOST, &spi_devcfg);
-    w5500_config.int_gpio_num = SPI_INT_GPIO;
+    eth_w5500_config_t w5500_config = ETH_W5500_DEFAULT_CONFIG(ETH_SPI_HOST, &spi_devcfg);
+    w5500_config.int_gpio_num = ETH_SPI_INT_GPIO;
 
     eth_mac_config_t mac_config = ETH_MAC_DEFAULT_CONFIG();
     mac_config.rx_task_stack_size = 4096;
@@ -57,7 +36,7 @@ static esp_eth_mac_t *eth_w5500_get_mac(void) {
 
 static esp_eth_phy_t *eth_w5500_get_phy(void) {
     eth_phy_config_t phy_config = ETH_PHY_DEFAULT_CONFIG();
-    phy_config.reset_gpio_num = SPI_RST_GPIO;
+    phy_config.reset_gpio_num = ETH_SPI_RST_GPIO;
 
     return esp_eth_phy_new_w5500(&phy_config);
 }
@@ -99,9 +78,6 @@ static void got_ip_event_handler(
 }
 
 void net_init(void) {
-    ESP_ERROR_CHECK(gpio_install_isr_service(0));
-
-    init_spi();
 
     esp_eth_mac_t *mac = eth_w5500_get_mac();
     esp_eth_phy_t *phy = eth_w5500_get_phy();
