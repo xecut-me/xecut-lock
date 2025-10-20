@@ -95,7 +95,7 @@ static void got_ip_event_handler(
 ) {
     ip_event_got_ip_t *event = (ip_event_got_ip_t *) event_data;
     const esp_netif_ip_info_t *ip_info = &event->ip_info;
-    ESP_LOGI(TAG, "Got IP Address:" IPSTR, IP2STR(&ip_info->ip));
+    ESP_LOGI(TAG, "Got IP Address: " IPSTR, IP2STR(&ip_info->ip));
 }
 
 void net_init(void) {
