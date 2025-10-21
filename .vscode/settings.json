@@ -5,7 +5,7 @@
   "idf.openOcdConfigs": [
     "board/esp32s3-builtin.cfg"
   ],
-  "idf.port": "/dev/tty.usbmodem1101",
+  "idf.port": "/dev/tty.usbmodem101",
   "idf.toolsPath": "/Users/vklachkov/.espressif",
   "idf.customExtraVars": {
     "IDF_TARGET": "esp32s3"
@@ -29,7 +29,14 @@
     "netdb.h": "c",
     "ping_sock.h": "c",
     "cstdlib": "c",
-    "freertos.h": "c"
+    "freertos.h": "c",
+    "hardware.h": "c",
+    "gpio.h": "c",
+    "network.h": "c",
+    "spi_common.h": "c",
+    "uart.h": "c",
+    "task.h": "c",
+    "stdbool.h": "c"
   },
   "idf.flashType": "UART"
 }
