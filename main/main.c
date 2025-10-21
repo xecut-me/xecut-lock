@@ -9,6 +9,11 @@
 #include "keypad.h"
 #include "ntp.h"
 #include "network.h"
+#include "mqtt.h"
+
+#include <esp_random.h>
+
+#define TAG "main"
 
 bool command(uint8_t *cmd, size_t cmd_len) {
     ESP_LOGI("TEST", "COMMAND %s", cmd);
@@ -33,7 +38,21 @@ void app_main(void) {
     ntp_init();
     net_init();
 
+    // TODO: Wait for connection
+
+    vTaskDelay(pdMS_TO_TICKS(10 * 1000));
+    mqtt_init();
+
+    // Just send some garbage to MQTT for tests.
     for (;;) {
-        vTaskDelay(pdMS_TO_TICKS(10 * 1000));
+        int qos = 2;
+
+        char buffer[256] = {0};
+        snprintf((char*)&buffer, sizeof(buffer), "{\"value\": \"%ld\", \"qos\": \"%d\"}", esp_random(), qos);
+
+        int ret = mqtt_publish("xecut-lock/test/wtf/ooops", (char *)&buffer, qos, 0);
+        ESP_LOGI(TAG, "Publish result: %d", ret);
+
+        vTaskDelay(pdMS_TO_TICKS(4 * 1000));
     }
 }

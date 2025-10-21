@@ -17,26 +17,8 @@
     "--compile-commands-dir=${workspaceFolder}/build"
   ],
   "files.associations": {
-    "esp_eth_mac_w5500.h": "c",
-    "esp_eth_phy_w5500.h": "c",
-    "ethernet.h": "c",
-    "esp_eth.h": "c",
-    "esp_netif_net_stack.h": "c",
-    "esp_log.h": "c",
-    "esp_event.h": "c",
-    "sockets.h": "c",
-    "socket.h": "c",
-    "netdb.h": "c",
-    "ping_sock.h": "c",
-    "cstdlib": "c",
-    "freertos.h": "c",
-    "hardware.h": "c",
-    "gpio.h": "c",
-    "network.h": "c",
-    "spi_common.h": "c",
-    "uart.h": "c",
-    "task.h": "c",
-    "stdbool.h": "c"
+    "*.c": "c",
+    "*.h": "c"
   },
   "idf.flashType": "UART"
 }
