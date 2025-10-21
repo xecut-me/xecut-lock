@@ -6,6 +6,20 @@
 #include <driver/gpio.h>
 #include <freertos/queue.h>
 
+static void setup_lock_gpio(void) {
+    gpio_config_t config = {
+        .pin_bit_mask = 1ULL << LOCK_GPIO,
+        .mode = GPIO_MODE_OUTPUT,
+        .pull_up_en = GPIO_PULLUP_DISABLE,
+        .pull_down_en = GPIO_PULLDOWN_DISABLE,
+        .intr_type = GPIO_INTR_DISABLE,
+    };
+
+    ESP_ERROR_CHECK(gpio_config(&config));
+
+    gpio_set_level(LOCK_GPIO, 0);
+}
+
 static void setup_eth_spi(void) {
     spi_bus_config_t buscfg = {
         .miso_io_num = ETH_SPI_MISO_GPIO,
@@ -52,6 +66,7 @@ static void setup_keypad_uart(void) {
 void hardware_setup(void) {
     ESP_ERROR_CHECK(gpio_install_isr_service(0));
 
+    setup_lock_gpio();
     setup_eth_spi();
     // setup_keypad_uart();
 }

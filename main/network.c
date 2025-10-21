@@ -78,7 +78,6 @@ static void got_ip_event_handler(
 }
 
 void net_init(void) {
-
     esp_eth_mac_t *mac = eth_w5500_get_mac();
     esp_eth_phy_t *phy = eth_w5500_get_phy();
 

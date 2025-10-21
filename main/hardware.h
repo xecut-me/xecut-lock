@@ -18,5 +18,9 @@
 #define KEYPAD_UART_TX           16
 #define KEYPAD_UART_RX           18
 
+// GPIO for Lock
+#define LOCK_GPIO          GPIO_NUM_42
+#define LOCK_OPEN_TIME_US  200000
+
 // Functions.
 void hardware_setup(void);

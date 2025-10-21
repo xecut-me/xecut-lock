@@ -7,6 +7,7 @@
 
 #include "hardware.h"
 #include "keypad.h"
+#include "lock.h"
 #include "ntp.h"
 #include "network.h"
 #include "mqtt.h"
@@ -52,6 +53,9 @@ void app_main(void) {
 
         int ret = mqtt_publish("xecut-lock/test/wtf/ooops", (char *)&buffer, qos, 0);
         ESP_LOGI(TAG, "Publish result: %d", ret);
+
+        // And trigger lock to test it.
+        lock_trigger();
 
         vTaskDelay(pdMS_TO_TICKS(4 * 1000));
     }
