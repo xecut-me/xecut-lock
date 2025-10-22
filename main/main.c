@@ -31,31 +31,31 @@ void app_main(void) {
 
     hardware_setup();
 
-    // keypad_init((struct keypad_callbacks){
-    //     .checkin = checkin,
-    //     .command = command,
-    // });
+    keypad_init((struct keypad_callbacks){
+        .checkin = checkin,
+        .command = command,
+    });
 
     ntp_init();
     net_init();
 
     // TODO: Wait for connection
 
-    vTaskDelay(pdMS_TO_TICKS(10 * 1000));
-    mqtt_init();
+    // vTaskDelay(pdMS_TO_TICKS(10 * 1000));
+    // mqtt_init();
 
     // Just send some garbage to MQTT for tests.
     for (;;) {
-        int qos = 2;
+        // int qos = 2;
 
-        char buffer[256] = {0};
-        snprintf((char*)&buffer, sizeof(buffer), "{\"value\": \"%ld\", \"qos\": \"%d\"}", esp_random(), qos);
+        // char buffer[256] = {0};
+        // snprintf((char*)&buffer, sizeof(buffer), "{\"value\": \"%ld\", \"qos\": \"%d\"}", esp_random(), qos);
 
-        int ret = mqtt_publish("xecut-lock/test/wtf/ooops", (char *)&buffer, qos, 0);
-        ESP_LOGI(TAG, "Publish result: %d", ret);
+        // int ret = mqtt_publish("xecut-lock/test/wtf/ooops", (char *)&buffer, qos, 0);
+        // ESP_LOGI(TAG, "Publish result: %d", ret);
 
-        // And trigger lock to test it.
-        lock_trigger();
+        // // And trigger lock to test it.
+        // lock_trigger();
 
         vTaskDelay(pdMS_TO_TICKS(4 * 1000));
     }

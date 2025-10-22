@@ -33,26 +33,19 @@ static void setup_eth_spi(void) {
 }
 
 static void setup_keypad_uart(void) {
-    static QueueHandle_t uart_queue;
-
-    ESP_ERROR_CHECK(uart_driver_install(
-        KEYPAD_UART_NUM,
-        KEYPAD_UART_BUFFER_SIZE,
-        KEYPAD_UART_BUFFER_SIZE,
-        10,
-        &uart_queue,
-        0
-    ));
-
     uart_config_t uart_config = {
         .baud_rate = KEYPAD_UART_BAUDRATE,
         .data_bits = UART_DATA_8_BITS,
         .parity = UART_PARITY_DISABLE,
         .stop_bits = UART_STOP_BITS_1,
         .flow_ctrl = UART_HW_FLOWCTRL_DISABLE,
+        .source_clk = UART_SCLK_DEFAULT,
     };
 
-    ESP_ERROR_CHECK(uart_param_config(KEYPAD_UART_NUM, &uart_config));
+    ESP_ERROR_CHECK(uart_param_config(
+        KEYPAD_UART_NUM,
+        &uart_config
+    ));
 
     ESP_ERROR_CHECK(uart_set_pin(
         KEYPAD_UART_NUM,
@@ -60,6 +53,15 @@ static void setup_keypad_uart(void) {
         KEYPAD_UART_RX,
         /* RTS */ UART_PIN_NO_CHANGE,
         /* CTS */ UART_PIN_NO_CHANGE
+    ));
+
+    ESP_ERROR_CHECK(uart_driver_install(
+        KEYPAD_UART_NUM,
+        KEYPAD_UART_BUFFER_SIZE,
+        KEYPAD_UART_BUFFER_SIZE,
+        0,
+        NULL,
+        0
     ));
 }
 
