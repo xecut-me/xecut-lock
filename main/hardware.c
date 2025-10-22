@@ -42,6 +42,15 @@ static void setup_keypad_uart(void) {
         .source_clk = UART_SCLK_DEFAULT,
     };
 
+    ESP_ERROR_CHECK(uart_driver_install(
+        KEYPAD_UART_NUM,
+        KEYPAD_UART_BUFFER_SIZE * 2,
+        0,
+        0,
+        NULL,
+        0
+    ));
+
     ESP_ERROR_CHECK(uart_param_config(
         KEYPAD_UART_NUM,
         &uart_config
@@ -54,15 +63,6 @@ static void setup_keypad_uart(void) {
         /* RTS */ UART_PIN_NO_CHANGE,
         /* CTS */ UART_PIN_NO_CHANGE
     ));
-
-    ESP_ERROR_CHECK(uart_driver_install(
-        KEYPAD_UART_NUM,
-        KEYPAD_UART_BUFFER_SIZE,
-        KEYPAD_UART_BUFFER_SIZE,
-        0,
-        NULL,
-        0
-    ));
 }
 
 void hardware_setup(void) {
@@ -70,5 +70,5 @@ void hardware_setup(void) {
 
     setup_lock_gpio();
     setup_eth_spi();
-    // setup_keypad_uart();
+    setup_keypad_uart();
 }

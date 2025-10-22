@@ -62,21 +62,21 @@ enum keypad_status {
 const char *keypad_status_str(enum keypad_status status) {
     switch (status) {
         case KEYPAD_STATUS_OK:
-            return "OK";
+            return "Success";
         case KEYPAD_STATUS_EMPTY_UART:
-            return "EMPTY_UART";
+            return "Empty UART buffer";
         case KEYPAD_STATUS_BUFFER_OVERFLOW:
-            return "BUFFER_OVERFLOW";
+            return "Buffer overflow";
         case KEYPAD_STATUS_INVALID_STATE:
-            return "KEYPAD_STATUS_INVALID_STATE";
+            return "Invalid keypad state";
         case KEYPAD_STATUS_UNHANDLED_COMMAND:
-            return "UNHANDLED_COMMAND";
+            return "Unhandled command";
         case KEYPAD_STATUS_BAD_CODE:
-            return "BAD_CODE";
+            return "Invalid code entered";
         case KEYPAD_STATUS_UNKNOWN_BUTTON:
-            return "UNKNOWN_BUTTON";
+            return "Unknown button pressed";
         default:
-            return "UNKNOWN";
+            return "Unknown status";
     }
 }
 
@@ -96,7 +96,7 @@ static struct {
     size_t uid_buffer_len;
 } keypad = {0};
 
-static enum keypad_status keypad_save_digit(uint8_t code) {
+static enum keypad_status keypad_save_digit(char chr) {
     if (keypad.state == KEYPAD_STATE_RESET) {
         keypad.state = KEYPAD_STATE_UID_INPUT;
     }
@@ -105,7 +105,7 @@ static enum keypad_status keypad_save_digit(uint8_t code) {
         return KEYPAD_STATUS_BUFFER_OVERFLOW;
     }
 
-    keypad.buffer[keypad.buffer_len++] = code;
+    keypad.buffer[keypad.buffer_len++] = chr;
 
     return KEYPAD_STATUS_OK;
 }
@@ -181,8 +181,8 @@ static enum keypad_status keypad_next_state(void) {
     return status;
 }
 
-static enum keypad_status keypad_handle_button(uint8_t code) {
-    switch (code) {
+static enum keypad_status keypad_handle_button(char chr) {
+    switch (chr) {
         // Reset state
         case KEYPAD_BTN_CLEAR:
             keypad_reset();
@@ -212,7 +212,7 @@ static enum keypad_status keypad_handle_button(uint8_t code) {
         case '8':
         case '9':
         case '0':
-            return keypad_save_digit(code);
+            return keypad_save_digit(chr);
 
         // Unused buttons
         case KEYPAD_BTN_TBL:
@@ -232,18 +232,6 @@ static enum keypad_status keypad_handle_button(uint8_t code) {
     return KEYPAD_STATUS_OK;
 }
 
-static void keypad_task(void *data) {
-    for (;;) {
-        uint8_t byte;
-
-        int ret = uart_read_bytes(KEYPAD_UART_NUM, &byte, 1, portMAX_DELAY);
-        if (ret == -1) continue;
-
-        enum keypad_status status = keypad_handle_button(byte);
-        ESP_LOGI(TAG, "Keypad status after '%c': %s", (char)byte, keypad_status_str(status));
-    }
-}
-
 void keypad_init(struct keypad_callbacks cb) {
     keypad.state = KEYPAD_STATE_RESET;
 
@@ -254,6 +242,17 @@ void keypad_init(struct keypad_callbacks cb) {
     assert(keypad.uid_buffer != NULL);
 
     keypad.callbacks = cb;
+}
 
-    xTaskCreate(keypad_task, "KeypadTask", 1024, NULL, 5, NULL);
+void keypad_process(const char *data) {
+    ESP_LOGI(TAG, "Process input '%s'", data);
+
+    while (*data++ != '\0') {
+        char chr = *data;
+        
+        enum keypad_status status = keypad_handle_button(chr);    
+        if (status != KEYPAD_STATUS_OK) {
+            ESP_LOGW(TAG, "Failed to process input '%c': %s", chr, keypad_status_str(status));
+        }
+    }
 }

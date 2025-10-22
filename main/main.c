@@ -2,6 +2,7 @@
 
 #include <esp_log.h>
 #include <esp_event.h>
+#include <driver/uart.h>
 #include <freertos/FreeRTOS.h>
 #include <freertos/task.h>
 
@@ -11,8 +12,6 @@
 #include "ntp.h"
 #include "network.h"
 #include "mqtt.h"
-
-#include <esp_random.h>
 
 #define TAG "main"
 
@@ -38,25 +37,22 @@ void app_main(void) {
 
     ntp_init();
     net_init();
+    mqtt_init();
 
-    // TODO: Wait for connection
+    uint8_t *keypad_buffer = (uint8_t*)malloc(KEYPAD_UART_BUFFER_SIZE);
 
-    // vTaskDelay(pdMS_TO_TICKS(10 * 1000));
-    // mqtt_init();
-
-    // Just send some garbage to MQTT for tests.
     for (;;) {
-        // int qos = 2;
+        int len = uart_read_bytes(
+            KEYPAD_UART_NUM,
+            keypad_buffer,
+            KEYPAD_UART_BUFFER_SIZE-1,
+            pdMS_TO_TICKS(20)
+        );
 
-        // char buffer[256] = {0};
-        // snprintf((char*)&buffer, sizeof(buffer), "{\"value\": \"%ld\", \"qos\": \"%d\"}", esp_random(), qos);
+        if (!len) continue;
 
-        // int ret = mqtt_publish("xecut-lock/test/wtf/ooops", (char *)&buffer, qos, 0);
-        // ESP_LOGI(TAG, "Publish result: %d", ret);
+        keypad_buffer[len] = '\0';
 
-        // // And trigger lock to test it.
-        // lock_trigger();
-
-        vTaskDelay(pdMS_TO_TICKS(4 * 1000));
+        keypad_process((const char*)keypad_buffer);
     }
 }
