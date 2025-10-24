@@ -5,8 +5,9 @@ import sys
 import argparse
 import base64
 
-# The value must be identical to the value of CONFIG_KDF_ROUNDS from main/otp.c.
+# The values must be identical to the values from main/otp.c.
 CONFIG_KDF_ROUNDS = 4000
+CONFIG_OTP_KEY_SIZE = 0x30
 
 def main():
     parser = argparse.ArgumentParser(description='Generate OTP key and otpauth URL')
@@ -26,12 +27,12 @@ def main():
             uid_bytes,
             kdf_key,
             CONFIG_KDF_ROUNDS,
-            len(kdf_key)
+            CONFIG_OTP_KEY_SIZE,
         )
 
         otp_key_b32 = base64.b32encode(otp_key).decode('utf-8').rstrip('=')
 
-        otpauth_url = f"otpauth://totp/{args.uid}?secret={otp_key_b32}&issuer=Xecut"
+        otpauth_url = f"otpauth://totp/{args.uid}?period=30&digits=6&algorithm=SHA1&secret={otp_key_b32}&issuer=Xecut"
         print(otpauth_url)
 
     except Exception as e:
