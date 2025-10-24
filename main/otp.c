@@ -1,6 +1,7 @@
 #include "otp.h"
 
 #include <esp_log.h>
+#include <esp_timer.h>
 #include <stddef.h>
 #include <stdint.h>
 #include <stdlib.h>
@@ -12,15 +13,17 @@
 
 #define TAG "otp"
 
-#define CONFIG_KDF_KEY_NAME "kdf_secret"
-#define CONFIG_KDF_KEY_MAX_SIZE 16
-#define CONFIG_KDF_ROUNDS 4000
-#define CONFIG_OTP_KEY_SIZE 0x30
-#define CONFIG_OTP_DIGITS 6
-#define CONFIG_OTP_TIMESTEP 30
+#define KDF_ROUNDS 1000
+#define OTP_KEY_SIZE 0x30
+#define OTP_DIGITS 6
+#define OTP_TIMESTEP 30
 
-uint8_t kdf_key[CONFIG_KDF_KEY_MAX_SIZE];
-size_t kdf_key_size = 0;
+// Uncomment this line to get timings of otp_verify.
+// #define DEBUG_PERFORMANCE
+
+const uint8_t kdf_key[] = {
+    #embed "../private/key.bin"
+};
 
 static uint32_t otp_truncate(const uint8_t *digest, uint8_t digits) {
   uint64_t offset = digest[19] & 0x0f;
@@ -63,29 +66,49 @@ static uint32_t get_otp(
         digest
     );
     
-    return otp_truncate(digest, CONFIG_OTP_DIGITS);
+    return otp_truncate(digest, OTP_DIGITS);
 };
 
-int otp_verify(const char *uid, size_t uid_len, const char *code, size_t code_len) {
+uint32_t str_to_uint32(const uint8_t *str, size_t len) {
+    uint32_t ret = 0;
+    for(size_t i = 0; i < len; i++) {
+        ret = ret * 10 + (str[i] - '0');
+    }
+    return ret;
+}
+
+bool otp_verify(
+    const uint8_t *uid, size_t uid_len,
+    const uint8_t *code, size_t code_len
+) {
+#ifdef DEBUG_PERFORMANCE
+    uint64_t start = esp_timer_get_time();
+#endif
+
     struct timeval tv_now;
     gettimeofday(&tv_now, NULL);
-    uint64_t step = tv_now.tv_sec / CONFIG_OTP_TIMESTEP;
+    uint64_t step = tv_now.tv_sec / OTP_TIMESTEP;
 
-    uint8_t otp_key[CONFIG_OTP_KEY_SIZE];
+    uint8_t otp_key[OTP_KEY_SIZE];
     mbedtls_pkcs5_pbkdf2_hmac_ext(
         MBEDTLS_MD_SHA1,
-        (const unsigned char *)uid, uid_len,
-        kdf_key, kdf_key_size,
-        CONFIG_KDF_ROUNDS,
+        uid, uid_len,
+        kdf_key, sizeof(kdf_key),
+        KDF_ROUNDS,
         sizeof(otp_key), otp_key
     );
 
-    uint32_t user_code = atoi(code);
-    uint32_t valid_code = get_otp(otp_key, sizeof(otp_key), CONFIG_OTP_DIGITS, step);
+    uint32_t user_code = str_to_uint32(code, code_len);
+    uint32_t valid_code = get_otp(otp_key, sizeof(otp_key), OTP_DIGITS, step);
     int is_valid = user_code == valid_code;
 
+#ifdef DEBUG_PERFORMANCE
+    uint64_t end = esp_timer_get_time();
+    ESP_LOGI(TAG, "otp_verify took %llu milliseconds to get otp", (end - start)/1000);
+#endif
+
     ESP_LOGI(
-        TAG, "Code for user '%s' for step %llu is %06d, input is %06d, otp is %s\n",
+        TAG, "Code for user '%s' for step %llu is %06d, input is %06d, otp is %s",
         uid, step, valid_code, user_code, is_valid ? "valid" : "invalid"
     );
 
