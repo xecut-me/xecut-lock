@@ -5,6 +5,7 @@
 #include <stddef.h>
 #include <stdint.h>
 #include <stdlib.h>
+#include <string.h>
 #include <math.h>
 #include <sys/time.h>
 #include <machine/endian.h>
@@ -69,18 +70,15 @@ static uint32_t get_otp(
     return otp_truncate(digest, OTP_DIGITS);
 };
 
-uint32_t str_to_uint32(const uint8_t *str, size_t len) {
+uint32_t str_to_uint32(const char *str) {
     uint32_t ret = 0;
-    for(size_t i = 0; i < len; i++) {
-        ret = ret * 10 + (str[i] - '0');
+    while (*str++ != '\0') {
+        ret = ret * 10 + (*str - '0');
     }
     return ret;
 }
 
-bool otp_verify(
-    const uint8_t *uid, size_t uid_len,
-    const uint8_t *code, size_t code_len
-) {
+bool otp_verify(const char *uid, const char *code) {
 #ifdef DEBUG_PERFORMANCE
     uint64_t start = esp_timer_get_time();
 #endif
@@ -92,13 +90,13 @@ bool otp_verify(
     uint8_t otp_key[OTP_KEY_SIZE];
     mbedtls_pkcs5_pbkdf2_hmac_ext(
         MBEDTLS_MD_SHA1,
-        uid, uid_len,
+        uid, strlen(uid),
         kdf_key, sizeof(kdf_key),
         KDF_ROUNDS,
         sizeof(otp_key), otp_key
     );
 
-    uint32_t user_code = str_to_uint32(code, code_len);
+    uint32_t user_code = str_to_uint32(code);
     uint32_t valid_code = get_otp(otp_key, sizeof(otp_key), OTP_DIGITS, step);
     int is_valid = user_code == valid_code;
 
