@@ -90,7 +90,7 @@ bool otp_verify(const char *uid, const char *code) {
     uint8_t otp_key[OTP_KEY_SIZE];
     mbedtls_pkcs5_pbkdf2_hmac_ext(
         MBEDTLS_MD_SHA1,
-        uid, strlen(uid),
+        (const uint8_t*)uid, strlen(uid),
         kdf_key, sizeof(kdf_key),
         KDF_ROUNDS,
         sizeof(otp_key), otp_key
