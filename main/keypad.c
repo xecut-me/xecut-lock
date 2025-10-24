@@ -1,7 +1,6 @@
 #include "keypad.h"
 
 #include <stdint.h>
-
 #include <driver/uart.h>
 
 #include "hardware.h"

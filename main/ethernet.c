@@ -1,4 +1,4 @@
-#include "network.h"
+#include "ethernet.h"
 
 #include <esp_log.h>
 #include <esp_event.h>
@@ -77,7 +77,7 @@ static void got_ip_event_handler(
     ESP_LOGI(TAG, "Got IP Address: " IPSTR, IP2STR(&ip_info->ip));
 }
 
-void net_init(void) {
+void eth_init(void) {
     esp_eth_mac_t *mac = eth_w5500_get_mac();
     esp_eth_phy_t *phy = eth_w5500_get_phy();
 

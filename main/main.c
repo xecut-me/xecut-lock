@@ -1,10 +1,9 @@
-#include <stdio.h>
-
 #include <esp_log.h>
 #include <esp_event.h>
 #include <driver/uart.h>
 #include <freertos/FreeRTOS.h>
 #include <freertos/task.h>
+#include <stdio.h>
 #include <sys/time.h>
 
 #include "config.h"
@@ -12,9 +11,14 @@
 #include "keypad.h"
 #include "otp.h"
 #include "lock.h"
-#include "network.h"
 #include "ntp.h"
 #include "mqtt.h"
+
+#ifdef USE_WIFI
+#include "wifi.h"
+#else
+#include "ethernet.h"
+#endif
 
 #define TAG "main"
 
@@ -60,7 +64,11 @@ void app_main(void) {
     });
 
     ntp_init();
-    net_init();
+#ifdef USE_WIFI
+    wifi_init();
+#else
+    eth_init();
+#endif
     mqtt_init();
 
     uint8_t *keypad_buffer = (uint8_t*)malloc(KEYPAD_UART_BUFFER_SIZE);
