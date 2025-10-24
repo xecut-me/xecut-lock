@@ -19,7 +19,8 @@
 #define KEYPAD_BTN_SLEEP   'L'
 #define KEYPAD_BTN_ARM     'A'
 
-#define KEYPAD_MAX_BUFFER_SIZE  32
+#define KEYPAD_BUFFER_SIZE            (32)
+#define KEYPAD_BUFFER_SIZE_WITH_NULL  (KEYPAD_BUFFER_SIZE + 1)
 
 #define ASSERT_STATE(state, required_state) \
     if ((state) != required_state) { \
@@ -88,11 +89,11 @@ static struct {
     struct keypad_callbacks callbacks;
 
     // Buffer for common state
-    uint8_t *buffer;
+    char *buffer;
     size_t buffer_len;
 
     // Special buffer for UID
-    uint8_t *uid_buffer;
+    char *uid_buffer;
     size_t uid_buffer_len;
 } keypad = {0};
 
@@ -101,7 +102,7 @@ static enum keypad_status keypad_save_digit(char chr) {
         keypad.state = KEYPAD_STATE_UID_INPUT;
     }
 
-    if (keypad.buffer_len == KEYPAD_MAX_BUFFER_SIZE) {
+    if (keypad.buffer_len == KEYPAD_BUFFER_SIZE) {
         return KEYPAD_STATUS_BUFFER_OVERFLOW;
     }
 
@@ -116,17 +117,14 @@ static void keypad_save_uid(void) {
     memcpy(keypad.uid_buffer, keypad.buffer, keypad.buffer_len);
     keypad.uid_buffer_len = keypad.buffer_len;
 
-    memset(keypad.buffer, 0, KEYPAD_MAX_BUFFER_SIZE);
+    memset(keypad.buffer, 0, KEYPAD_BUFFER_SIZE);
     keypad.buffer_len = 0;
 }
 
 static enum keypad_status keypad_handle_command(void) {
     ASSERT_STATE(keypad.state, KEYPAD_STATE_COMMAND);
 
-    bool result = keypad.callbacks.command(
-        keypad.buffer,
-        keypad.buffer_len
-    );
+    bool result = keypad.callbacks.command(keypad.buffer);
 
     return result ? KEYPAD_STATUS_OK : KEYPAD_STATUS_BAD_CODE;
 }
@@ -137,10 +135,8 @@ static enum keypad_status keypad_verify_code(void) {
     bool result = keypad.callbacks.checkin(
         // UID
         keypad.uid_buffer,
-        keypad.uid_buffer_len,
         // Code
-        keypad.buffer,
-        keypad.buffer_len
+        keypad.buffer
     );
 
     return result ? KEYPAD_STATUS_OK : KEYPAD_STATUS_BAD_CODE;
@@ -149,10 +145,10 @@ static enum keypad_status keypad_verify_code(void) {
 static void keypad_reset(void) {
     keypad.state = KEYPAD_STATE_RESET;
 
-    memset(keypad.buffer, 0, KEYPAD_MAX_BUFFER_SIZE);
+    memset(keypad.buffer, 0, KEYPAD_BUFFER_SIZE);
     keypad.buffer_len = 0;
 
-    memset(keypad.uid_buffer, 0, KEYPAD_MAX_BUFFER_SIZE);
+    memset(keypad.uid_buffer, 0, KEYPAD_BUFFER_SIZE);
     keypad.uid_buffer_len = 0;
 }
 
@@ -235,11 +231,13 @@ static enum keypad_status keypad_handle_button(char chr) {
 void keypad_init(struct keypad_callbacks cb) {
     keypad.state = KEYPAD_STATE_RESET;
 
-    keypad.buffer = malloc(KEYPAD_MAX_BUFFER_SIZE);
+    keypad.buffer = malloc(KEYPAD_BUFFER_SIZE_WITH_NULL);
     assert(keypad.buffer != NULL);
+    memset(keypad.buffer, 0, KEYPAD_BUFFER_SIZE_WITH_NULL);
 
-    keypad.uid_buffer = malloc(KEYPAD_MAX_BUFFER_SIZE);
+    keypad.uid_buffer = malloc(KEYPAD_BUFFER_SIZE_WITH_NULL);
     assert(keypad.uid_buffer != NULL);
+    memset(keypad.uid_buffer, 0, KEYPAD_BUFFER_SIZE_WITH_NULL);
 
     keypad.callbacks = cb;
 }
