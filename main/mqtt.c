@@ -96,7 +96,7 @@ void mqtt_event_handler(
 void mqtt_init(void) {
     const esp_mqtt_client_config_t mqtt_cfg = {
         .broker.address.uri = MQTT_URI,
-        .credentials.client_id = MQTT_CLIENT_ID,
+        .credentials.client_id = "xecut-lock-" MQTT_DEVICE_ID,
         .session.protocol_ver = MQTT_PROTOCOL_V_3_1_1,
         .network.reconnect_timeout_ms = MQTT_RECONNECT_DELAY_SEC * 1000,
     };

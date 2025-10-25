@@ -24,7 +24,7 @@
 #define TAG "main"
 
 bool command(const char *cmd) {
-    const char *topic = MQTT_TOPIC(MQTT_CLIENT_ID, "command");
+    const char *topic = MQTT_TOPIC(MQTT_DEVICE_ID, "command");
 
     struct timeval tv_now;
     gettimeofday(&tv_now, NULL);
@@ -43,7 +43,7 @@ bool checkin(const char *uid, const char *code) {
 
     lock_trigger();
 
-    const char *topic = MQTT_TOPIC(MQTT_CLIENT_ID, "checkin");
+    const char *topic = MQTT_TOPIC(MQTT_DEVICE_ID, "checkin");
 
     struct timeval tv_now;
     gettimeofday(&tv_now, NULL);
@@ -65,7 +65,7 @@ void mqtt_lock_topic_updated(
 
 void status_thread(void *param) {
     for (;;) {
-        const char *topic = MQTT_TOPIC(MQTT_CLIENT_ID, "status");
+        const char *topic = MQTT_TOPIC(MQTT_DEVICE_ID, "status");
 
         const char *status = "alive";
 
@@ -142,7 +142,7 @@ void app_main(void) {
 
     // TODO: wait first connect before trying to connect to mqtt server.
     mqtt_init();
-    mqtt_subscribe(MQTT_TOPIC(MQTT_CLIENT_ID, "lock"), /* qos */ 1, mqtt_lock_topic_updated);
+    mqtt_subscribe(MQTT_TOPIC(MQTT_DEVICE_ID, "lock"), /* qos */ 1, mqtt_lock_topic_updated);
     run_status_thread();
 
     keypad_init((struct keypad_callbacks) {

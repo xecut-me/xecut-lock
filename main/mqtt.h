@@ -1,6 +1,6 @@
 #pragma once
 
-#define MQTT_TOPIC(id, topic) ("xecut-lock/" id "/" topic)
+#define MQTT_TOPIC(device_id, topic) ("xecut-lock/" device_id "/" topic)
 
 typedef void (*mqtt_topic_updated_handler_t)(
     const char *topic, int topic_len,
