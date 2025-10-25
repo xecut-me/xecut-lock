@@ -11,5 +11,6 @@ struct keypad_callbacks {
 
 void keypad_init(struct keypad_callbacks cb);
 
-void keypad_process(const char *data);
-void keypad_process_bytes(const char *data, int data_len);
+void keypad_process(const char *data, int data_len);
+
+void keypad_reset(void);

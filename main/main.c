@@ -1,4 +1,5 @@
 #include <esp_log.h>
+#include <esp_timer.h>
 #include <esp_event.h>
 #include <driver/uart.h>
 #include <freertos/FreeRTOS.h>
@@ -95,25 +96,34 @@ void run_status_thread(void) {
 }
 
 void keypad_loop(void) {
-    keypad_init((struct keypad_callbacks) {
-        .checkin = checkin,
-        .command = command,
-    });
+    uint8_t *buffer = (uint8_t*)malloc(KEYPAD_UART_BUFFER_SIZE);
+    int64_t last_input_timestamp = INT64_MAX;
 
-    uint8_t *keypad_buffer = (uint8_t*)malloc(KEYPAD_UART_BUFFER_SIZE);
     for (;;) {
         int len = uart_read_bytes(
             KEYPAD_UART_NUM,
-            keypad_buffer,
-            KEYPAD_UART_BUFFER_SIZE-1,
+            buffer,
+            KEYPAD_UART_BUFFER_SIZE,
             pdMS_TO_TICKS(20)
         );
 
-        if (!len) continue;
+        // Reset keypad after inactivity before receiving new data.
+        if (len == 0) {
+            bool keypad_used = last_input_timestamp != INT64_MAX;
+            int64_t inaction_time = esp_timer_get_time() - last_input_timestamp;
+            int64_t us_to_reset = 30 * 1000 * 1000;  // 30 seconds
 
-        keypad_buffer[len] = '\0';
+            if (keypad_used && inaction_time >= us_to_reset) {
+                ESP_LOGI(TAG, "Reset keypad after 30 seconds of inactivity");
+                keypad_reset();
+                last_input_timestamp = INT64_MAX;
+            }
 
-        keypad_process((const char*)keypad_buffer);
+            continue;
+        }
+
+        keypad_process((char*)buffer, len);
+        last_input_timestamp = esp_timer_get_time();
     }
 }
 
@@ -134,6 +144,11 @@ void app_main(void) {
     mqtt_init();
     mqtt_subscribe(MQTT_TOPIC(MQTT_CLIENT_ID, "lock"), /* qos */ 1, mqtt_lock_topic_updated);
     run_status_thread();
+
+    keypad_init((struct keypad_callbacks) {
+        .checkin = checkin,
+        .command = command,
+    });
 
     keypad_loop();
 }

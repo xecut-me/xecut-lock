@@ -141,16 +141,6 @@ static enum keypad_status keypad_verify_code(void) {
     return result ? KEYPAD_STATUS_OK : KEYPAD_STATUS_BAD_CODE;
 }
 
-static void keypad_reset(void) {
-    keypad.state = KEYPAD_STATE_RESET;
-
-    memset(keypad.buffer, 0, KEYPAD_BUFFER_SIZE);
-    keypad.buffer_len = 0;
-
-    memset(keypad.uid_buffer, 0, KEYPAD_BUFFER_SIZE);
-    keypad.uid_buffer_len = 0;
-}
-
 static enum keypad_status keypad_next_state(void) {
     enum keypad_status status = KEYPAD_STATUS_INVALID_STATE;
 
@@ -238,22 +228,23 @@ void keypad_init(struct keypad_callbacks cb) {
     keypad.callbacks = cb;
 }
 
-void keypad_process(const char *data) {
-    ESP_LOGI(TAG, "Process input '%s'", data);
-
-    for (char chr = *data; chr != '\0'; chr = *++data) {        
-        enum keypad_status status = keypad_handle_button(chr);    
-        if (status < KEYPAD_STATUS_BAD_CODE) {
-            ESP_LOGW(TAG, "Failed to process char '%c': %s", chr, keypad_status_str(status));
-        }
-    }
-}
-
-void keypad_process_bytes(const char *data, int data_len) {
+void keypad_process(const char *data, int data_len) {
     for (int i = 0; i < data_len; i++) {        
         enum keypad_status status = keypad_handle_button(data[i]);    
         if (status < KEYPAD_STATUS_BAD_CODE) {
             ESP_LOGW(TAG, "Failed to process char '%c': %s", data[i], keypad_status_str(status));
+        } else {
+            ESP_LOGD(TAG, "Char '%c' processed with status %s", data[i], keypad_status_str(status));
         }
     }
+}
+
+void keypad_reset(void) {
+    keypad.state = KEYPAD_STATE_RESET;
+
+    memset(keypad.buffer, 0, KEYPAD_BUFFER_SIZE);
+    keypad.buffer_len = 0;
+
+    memset(keypad.uid_buffer, 0, KEYPAD_BUFFER_SIZE);
+    keypad.uid_buffer_len = 0;
 }

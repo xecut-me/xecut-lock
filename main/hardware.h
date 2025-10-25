@@ -14,7 +14,7 @@
 // UART for Keypad
 #define KEYPAD_UART_NUM          UART_NUM_2
 #define KEYPAD_UART_BAUDRATE     9600
-#define KEYPAD_UART_BUFFER_SIZE  512
+#define KEYPAD_UART_BUFFER_SIZE  256
 #define KEYPAD_UART_TX           GPIO_NUM_4
 #define KEYPAD_UART_RX           GPIO_NUM_5
 
