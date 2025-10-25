@@ -70,7 +70,7 @@ void wifi_init(void) {
         .sta = {
             .ssid = WIFI_SSID,
             .password = WIFI_PSK,
-            .scan_method = WIFI_FAST_SCAN,
+            .scan_method = WIFI_ALL_CHANNEL_SCAN,
             .sort_method = WIFI_CONNECT_AP_BY_SIGNAL,
             .threshold.rssi = -127,
             .threshold.authmode = WIFI_AUTH_WPA2_PSK,
