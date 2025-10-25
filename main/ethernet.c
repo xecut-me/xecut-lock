@@ -1,3 +1,6 @@
+#include "config.h"
+#ifndef USE_WIFI
+
 #include "ethernet.h"
 
 #include <esp_log.h>
@@ -98,3 +101,5 @@ void eth_init(void) {
 
     ESP_ERROR_CHECK(esp_eth_start(eth_handle));
 }
+
+#endif  // #ifndef USE_WIFI

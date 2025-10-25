@@ -69,6 +69,7 @@ void app_main(void) {
 #else
     eth_init();
 #endif
+    // TODO: wait first connect before trying to connect to mqtt server.
     mqtt_init();
 
     uint8_t *keypad_buffer = (uint8_t*)malloc(KEYPAD_UART_BUFFER_SIZE);
