@@ -51,11 +51,11 @@ const char *keypad_state_str(enum keypad_state state) {
 
 enum keypad_status {
     KEYPAD_STATUS_OK = 0,
-    KEYPAD_STATUS_EMPTY_UART = -1,
-    KEYPAD_STATUS_BUFFER_OVERFLOW = -2,
-    KEYPAD_STATUS_INVALID_STATE = -3,
-    KEYPAD_STATUS_UNHANDLED_COMMAND = -4,
-    KEYPAD_STATUS_BAD_CODE = -5,
+    KEYPAD_STATUS_BAD_CODE = -1,
+    KEYPAD_STATUS_EMPTY_UART = -2,
+    KEYPAD_STATUS_BUFFER_OVERFLOW = -3,
+    KEYPAD_STATUS_INVALID_STATE = -4,
+    KEYPAD_STATUS_UNHANDLED_COMMAND = -5,
     KEYPAD_STATUS_UNKNOWN_BUTTON = -6,
 };
 
@@ -244,12 +244,10 @@ void keypad_init(struct keypad_callbacks cb) {
 void keypad_process(const char *data) {
     ESP_LOGI(TAG, "Process input '%s'", data);
 
-    while (*data++ != '\0') {
-        char chr = *data;
-        
+    for (char chr = *data; chr != '\0'; chr = *++data) {        
         enum keypad_status status = keypad_handle_button(chr);    
-        if (status != KEYPAD_STATUS_OK) {
-            ESP_LOGW(TAG, "Failed to process input '%c': %s", chr, keypad_status_str(status));
+        if (status < KEYPAD_STATUS_BAD_CODE) {
+            ESP_LOGW(TAG, "Failed to process char '%c': %s", chr, keypad_status_str(status));
         }
     }
 }

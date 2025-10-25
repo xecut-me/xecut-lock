@@ -72,8 +72,8 @@ static uint32_t get_otp(
 
 uint32_t str_to_uint32(const char *str) {
     uint32_t ret = 0;
-    while (*str++ != '\0') {
-        ret = ret * 10 + (*str - '0');
+    for (char chr = *str; chr != '\0'; chr = *++str) {
+        ret = ret * 10 + (chr - '0');
     }
     return ret;
 }
