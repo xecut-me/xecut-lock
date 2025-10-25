@@ -1,5 +1,6 @@
 build/
 managed_components/
-private/
+private/*.bin
+private/*.key
 sdkconfig.old
 config.h
