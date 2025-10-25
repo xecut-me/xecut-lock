@@ -251,3 +251,12 @@ void keypad_process(const char *data) {
         }
     }
 }
+
+void keypad_process_bytes(const char *data, int data_len) {
+    for (int i = 0; i < data_len; i++) {        
+        enum keypad_status status = keypad_handle_button(data[i]);    
+        if (status < KEYPAD_STATUS_BAD_CODE) {
+            ESP_LOGW(TAG, "Failed to process char '%c': %s", data[i], keypad_status_str(status));
+        }
+    }
+}
