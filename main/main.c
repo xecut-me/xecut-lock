@@ -40,6 +40,8 @@ bool checkin(const char *uid, const char *code) {
     bool is_valid_otp = otp_verify(uid, code);
     if (!is_valid_otp) return false;
 
+    lock_trigger();
+
     const char *topic = MQTT_TOPIC(MQTT_CLIENT_ID, "checkin");
 
     struct timeval tv_now;
