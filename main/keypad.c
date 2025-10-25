@@ -96,7 +96,7 @@ static struct {
     size_t uid_buffer_len;
 } keypad = {0};
 
-static enum keypad_status keypad_save_digit(char chr) {
+static enum keypad_status keypad_save_char(char chr) {
     if (keypad.state == KEYPAD_STATE_RESET) {
         keypad.state = KEYPAD_STATE_UID_INPUT;
     }
@@ -196,7 +196,7 @@ static enum keypad_status keypad_handle_button(char chr) {
         case KEYPAD_BTN_ENTER:
             return keypad_next_state();
 
-        // Some numbers
+        // Numbers
         case '1':
         case '2':
         case '3':
@@ -207,9 +207,6 @@ static enum keypad_status keypad_handle_button(char chr) {
         case '8':
         case '9':
         case '0':
-            return keypad_save_digit(chr);
-
-        // Unused buttons
         case KEYPAD_BTN_TBL:
         case KEYPAD_BTN_MEM:
         case KEYPAD_BTN_BYP:
@@ -217,7 +214,7 @@ static enum keypad_status keypad_handle_button(char chr) {
         case KEYPAD_BTN_STAY:
         case KEYPAD_BTN_SLEEP:
         case KEYPAD_BTN_ARM:
-            return KEYPAD_STATUS_OK;
+            return keypad_save_char(chr);
 
         // Someone connected via flipper and is trying to hack us!
         default:
