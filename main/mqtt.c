@@ -116,7 +116,7 @@ int mqtt_publish(const char *topic, const char *payload, int qos, int retain) {
 
     int status = esp_mqtt_client_publish(mqtt.client, topic, payload, 0, qos, retain);
     if (status >= 0) {
-        ESP_LOGI(
+        ESP_LOGD(
             TAG, "Successfully publish message '%s' to topic '%s' with qos=%d, retain=%d",
             topic, payload,
             qos, retain

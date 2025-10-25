@@ -114,7 +114,7 @@ void keypad_loop(void) {
             int64_t us_to_reset = 30 * 1000 * 1000;  // 30 seconds
 
             if (keypad_used && inaction_time >= us_to_reset) {
-                ESP_LOGI(TAG, "Reset keypad after 30 seconds of inactivity");
+                ESP_LOGD(TAG, "Reset keypad after 30 seconds of inactivity");
                 keypad_reset();
                 last_input_timestamp = INT64_MAX;
             }

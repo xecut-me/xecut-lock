@@ -105,7 +105,7 @@ bool otp_verify(const char *uid, const char *code) {
     ESP_LOGI(TAG, "otp_verify took %llu milliseconds to get otp", (end - start)/1000);
 #endif
 
-    ESP_LOGI(
+    ESP_LOGD(
         TAG, "Code for user '%s' for step %llu is %06d, input is %06d, otp is %s",
         uid, step, valid_code, user_code, is_valid ? "valid" : "invalid"
     );
