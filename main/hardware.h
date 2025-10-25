@@ -1,6 +1,6 @@
 #pragma once
 
-// SPI for Ethernet.
+// SPI for Ethernet (if used).
 #define ETH_SPI_HOST       1
 #define ETH_SPI_CLOCK_MHZ  12
 
