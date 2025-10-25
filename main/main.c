@@ -60,6 +60,38 @@ void mqtt_lock_topic_updated(
     ESP_LOGI(TAG, "Some message received to /lock topic");
 }
 
+void status_thread(void *param) {
+    for (;;) {
+        const char *topic = MQTT_TOPIC(MQTT_CLIENT_ID, "status");
+
+        const char *status = "alive";
+
+        struct timeval tv_now;
+        gettimeofday(&tv_now, NULL);
+
+        char message[128] = {0};
+        snprintf((char*)&message, sizeof(message), "{\"status\": \"%s\", \"timestamp\": \"%lld\"}", status, tv_now.tv_sec);
+
+        int ret = mqtt_publish(topic, message, /* qos */ 1, /* retain */ false);
+        if (ret >= 0) {
+            vTaskDelay(pdMS_TO_TICKS(10 * 1000));
+        } else {
+            vTaskDelay(pdMS_TO_TICKS(MQTT_RECONNECT_DELAY_SEC * 1000));
+        }
+    }
+}
+
+void run_status_thread(void) {
+    xTaskCreate(
+        status_thread,
+        "lock_status",
+        4096,
+        NULL,
+        tskIDLE_PRIORITY,
+        NULL
+    );
+}
+
 void keypad_loop(void) {
     keypad_init((struct keypad_callbacks) {
         .checkin = checkin,
@@ -99,6 +131,7 @@ void app_main(void) {
     // TODO: wait first connect before trying to connect to mqtt server.
     mqtt_init();
     mqtt_subscribe(MQTT_TOPIC(MQTT_CLIENT_ID, "lock"), /* qos */ 1, mqtt_lock_topic_updated);
+    run_status_thread();
 
     keypad_loop();
 }
