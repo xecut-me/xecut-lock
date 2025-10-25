@@ -19,7 +19,7 @@ static void setup_lock_gpio(void) {
 
     ESP_ERROR_CHECK(gpio_config(&config));
 
-    gpio_set_level(LOCK_GPIO, 0);
+    gpio_set_level(LOCK_GPIO, !LOCK_OPENED_LOGIC_LEVEL);
 }
 
 #ifndef USE_WIFI
