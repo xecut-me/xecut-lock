@@ -4,7 +4,7 @@ A smart lock project with OTP codes, MQTT control, and WiFi/Ethernet connectivit
 
 ## Preparing to Build the Firmware
 
-First, clone the project.
+First, clone the project and then create `main/config.h` and generate kdf key.
 
 ### Creating config.h
 
@@ -12,7 +12,7 @@ The `main/config.h` file specifies WiFi login and password, MQTT credentials, in
 
 A config template is located in the [main/config.template.h](main/config.template.h) file. Copy it to `main/config.h`, edit it for your needs, and you can proceed to the next step.
 
-## KDF Key Generation
+### KDF Key Generation
 
 The lock doesn't store OTP keys but generates them on-the-fly for specific users from a KDF key. The key itself is a random set of bytes of arbitrary length.
 
