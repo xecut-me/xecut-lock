@@ -11,6 +11,14 @@ OTP_KEY_SIZE = 0x30
 OTP_DIGITS   = 6
 OTP_TIMESTEP = 30
 
+def validate_uid(uid: str):
+    allowed_letters = ['T', 'M', 'B', 'O', 'S', 'L', 'A']
+    allowed_letters_str = ', '.join(allowed_letters)
+
+    for char in uid:
+        if not char.isalnum() or (char.isalpha() and char not in allowed_letters):
+            raise Exception(f"unsupported char '{char}', only 0-9 digit and {allowed_letters_str} letters are allowed")
+
 def main():
     parser = argparse.ArgumentParser(description='Generate OTP key and otpauth URL')
     parser.add_argument('kdf_key_path', help='Path to KDF key file')
@@ -19,6 +27,8 @@ def main():
     args = parser.parse_args()
 
     try:
+        validate_uid(args.uid)
+
         with open(args.kdf_key_path, 'rb') as f:
             kdf_key = f.read()
 
