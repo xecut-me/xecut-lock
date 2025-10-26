@@ -8,7 +8,7 @@ First, clone the project and then create `main/config.h` and generate kdf key.
 
 ### Creating config.h
 
-The `main/config.h` file specifies WiFi login and password, MQTT credentials, internet connection method selection, lock identifier, and OTP key. This file contains sensitive data and should never be committed.
+The `main/config.h` file specifies WiFi login and password, MQTT credentials, internet connection method selection and lock identifier. This file contains sensitive data and should never be committed.
 
 A config template is located in the [main/config.template.h](main/config.template.h) file. Copy it to `main/config.h`, edit it for your needs, and you can proceed to the next step.
 
@@ -44,13 +44,13 @@ To generate an OTP key on your computer, use the `utils/get_otp.py` script:
 ./utils/get_otp.py ./private/key.bin uid
 ```
 
-For example, to generate a user with uid 1, the command would look like this:
+For example, to generate an OTP key for user with uid 1, the command will look like this:
 
 ```sh
 ./utils/get_otp.py ./private/key.bin 1
 ```
 
-The script will output a string in otpauth format:
+The script output is a string in otpauth format:
 
 ```
 otpauth://totp/1?secret=0000H1111S2222CAAUG6XXKPOBBBBXXXXXI5CQKBP6JXXXX...&issuer=Xecut
