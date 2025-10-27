@@ -179,7 +179,7 @@ static enum keypad_status keypad_handle_button(char chr) {
                 keypad.state = KEYPAD_STATE_COMMAND;
                 return KEYPAD_STATUS_OK;
             } else {
-                return KEYPAD_STATUS_INVALID_STATE;
+                return keypad_save_char(chr);
             }
 
         // Next state

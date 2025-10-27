@@ -12,8 +12,15 @@ OTP_DIGITS   = 6
 OTP_TIMESTEP = 30
 
 def validate_uid(uid: str):
-    allowed_letters = ['T', 'M', 'B', 'O', 'S', 'L', 'A']
+    allowed_letters = ['P', 'T', 'M', 'B', 'O', 'S', 'L', 'A']
     allowed_letters_str = ', '.join(allowed_letters)
+    max_len = 32
+
+    if uid.startswith('P'):
+        raise Exception(f"uid cannot start with the letter P")
+
+    if len(uid) > max_len:
+        raise Exception(f"uid too long, max length is {max_len} chars")
 
     for char in uid:
         if not char.isalnum() or (char.isalpha() and char not in allowed_letters):
