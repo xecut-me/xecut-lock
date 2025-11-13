@@ -132,7 +132,6 @@ void app_main(void) {
     ESP_ERROR_CHECK(esp_event_loop_create_default());
 
     hardware_setup();
-    indicator_listen_events();
 
     ntp_init();
 
@@ -146,6 +145,8 @@ void app_main(void) {
     mqtt_init();
     mqtt_subscribe(MQTT_TOPIC(MQTT_DEVICE_ID, "lock"), /* qos */ 1, mqtt_lock_topic_updated);
     run_status_thread();
+
+    indicator_listen_events();
 
     keypad_init((struct keypad_callbacks) {
         .checkin = checkin,
