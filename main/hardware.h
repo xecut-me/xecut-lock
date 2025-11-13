@@ -24,7 +24,7 @@
 #define LOCK_OPENED_LOGIC_LEVEL  0
 
 // GPIO for Indicator
-#define STATUS_LED_GPIO GPIO_NUM_8
+#define INDICATOR_LED_GPIO  GPIO_NUM_48
 
 // Functions.
 void hardware_setup(void);

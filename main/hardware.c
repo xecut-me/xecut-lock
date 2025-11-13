@@ -24,7 +24,7 @@ static void setup_lock_gpio(void) {
 }
 
 static void setup_indicator_gpio(void) {
-    indicator_configure_pin(STATUS_LED_GPIO);   
+    indicator_configure_pin(INDICATOR_LED_GPIO);   
 }
 
 #ifndef USE_WIFI
