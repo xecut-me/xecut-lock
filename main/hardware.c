@@ -7,6 +7,7 @@
 #include <freertos/queue.h>
 
 #include "config.h"
+#include "indicator.h"
 
 static void setup_lock_gpio(void) {
     gpio_config_t config = {
@@ -20,6 +21,10 @@ static void setup_lock_gpio(void) {
     ESP_ERROR_CHECK(gpio_config(&config));
 
     gpio_set_level(LOCK_GPIO, !LOCK_OPENED_LOGIC_LEVEL);
+}
+
+static void setup_indicator_gpio(void) {
+    indicator_configure_pin(STATUS_LED_GPIO);   
 }
 
 #ifndef USE_WIFI
@@ -73,6 +78,7 @@ void hardware_setup(void) {
     ESP_ERROR_CHECK(gpio_install_isr_service(0));
 
     setup_lock_gpio();
+    setup_indicator_gpio();
 #ifndef USE_WIFI
     setup_eth_spi();
 #endif

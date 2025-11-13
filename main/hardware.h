@@ -19,9 +19,12 @@
 #define KEYPAD_UART_RX           GPIO_NUM_5
 
 // GPIO for Lock
-#define LOCK_GPIO          GPIO_NUM_3
-#define LOCK_OPEN_TIME_US  200000
-#define LOCK_OPENED_LOGIC_LEVEL    0
+#define LOCK_GPIO                GPIO_NUM_3
+#define LOCK_OPEN_TIME_US        200000
+#define LOCK_OPENED_LOGIC_LEVEL  0
+
+// GPIO for Indicator
+#define STATUS_LED_GPIO GPIO_NUM_8
 
 // Functions.
 void hardware_setup(void);

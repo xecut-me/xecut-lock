@@ -1,6 +1,18 @@
 dependencies:
+  espressif/led_strip:
+    component_hash: 
+      f0d1b7f93eb3ee57bcfd220656176b0b5616e1947f89ed44364555cf910c4840
+    dependencies:
+    - name: idf
+      require: private
+      version: '>=5.0'
+    source:
+      registry_url: https://components.espressif.com/
+      type: service
+    version: 3.0.2
   espressif/w5500:
-    component_hash: 0bfa69f4ebd57ec8554ee28f31f777f06df549dcb69f48121845402d447d077a
+    component_hash: 
+      0bfa69f4ebd57ec8554ee28f31f777f06df549dcb69f48121845402d447d077a
     dependencies:
     - name: idf
       require: private
@@ -14,8 +26,9 @@ dependencies:
       type: idf
     version: 6.0.0
 direct_dependencies:
+- espressif/led_strip
 - espressif/w5500
 - idf
-manifest_hash: 4e78d1d6cafe57104193c23d609427e24ba1d8c4574ce38d5e7d535c321c76c2
+manifest_hash: 42165e297b90b0e5050bb68ff5f89f12b62a7ceae0d12358dac008622c837efa
 target: esp32s3
 version: 2.0.0

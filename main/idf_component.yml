@@ -3,3 +3,4 @@ dependencies:
   idf:
     version: '>=4.1.0'
   espressif/w5500: ^1.0.0
+  espressif/led_strip: ^3.0.2
