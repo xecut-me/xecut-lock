@@ -9,6 +9,8 @@ typedef void (*mqtt_topic_updated_handler_t)(
 
 void mqtt_init(void);
 
+void *mqtt_get_client(void);
+
 int mqtt_publish(const char *topic, const char *payload, int qos, int retain);
 
 int mqtt_subscribe(const char *topic, int qos, mqtt_topic_updated_handler_t callback);
