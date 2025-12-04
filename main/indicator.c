@@ -96,7 +96,7 @@ static void mqtt_event_handler(
     if (event_id == MQTT_EVENT_CONNECTED) {
         set_status(INDICATOR_OK);
     }
-    else if (event_id == MQTT_EVENT_DISCONNECTED) {
+    else if (event_id == MQTT_EVENT_DISCONNECTED && indicator.status != INDICATOR_NO_WIFI) {
         set_status(INDICATOR_NO_MQTT);
     }
 }
