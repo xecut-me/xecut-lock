@@ -24,12 +24,12 @@
 
 #define TAG "main"
 
+#define UPTIME()  (esp_timer_get_time() / 1000000)
+
 time_t start_timestamp;
 
 void save_start_timestamp() {
-    struct timeval tv_now;
-    gettimeofday(&tv_now, NULL);
-    start_timestamp = tv_now.tv_sec;
+    start_timestamp = UPTIME();
 }
 
 bool command(const char *cmd) {
@@ -81,11 +81,13 @@ void status_thread(void *param) {
         struct timeval tv_now;
         gettimeofday(&tv_now, NULL);
 
+        int64_t uptime = UPTIME() - start_timestamp;
+
         char message[128] = {0};
         snprintf(
             (char*)&message, sizeof(message),
             "{\"status\": \"%s\", \"timestamp\": \"%lld\", \"uptime\": %lld}",
-            status, tv_now.tv_sec, tv_now.tv_sec - start_timestamp
+            status, tv_now.tv_sec, uptime
         );
 
         int ret = mqtt_publish(topic, message, /* qos */ 1, /* retain */ false);
