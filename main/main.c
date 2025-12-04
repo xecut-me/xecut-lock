@@ -61,7 +61,7 @@ void mqtt_lock_topic_updated(
     const char *topic, int topic_len,
     const char *data,  int data_len
 ) {
-    ESP_LOGI(TAG, "Some message received to /lock topic");
+    keypad_process(data, data_len);
 }
 
 void status_thread(void *param) {
