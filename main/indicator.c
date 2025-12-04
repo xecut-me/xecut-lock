@@ -115,6 +115,8 @@ static void indicator_thread(void *param) {
     }
 
     display_current_status();
+
+    while (true) vTaskDelay(pdMS_TO_TICKS(1000));
 }
 
 void indicator_init(void) {
