@@ -24,6 +24,14 @@
 
 #define TAG "main"
 
+time_t start_timestamp;
+
+void save_start_timestamp() {
+    struct timeval tv_now;
+    gettimeofday(&tv_now, NULL);
+    start_timestamp = tv_now.tv_sec;
+}
+
 bool command(const char *cmd) {
     const char *topic = MQTT_TOPIC(MQTT_DEVICE_ID, "command");
 
@@ -74,7 +82,11 @@ void status_thread(void *param) {
         gettimeofday(&tv_now, NULL);
 
         char message[128] = {0};
-        snprintf((char*)&message, sizeof(message), "{\"status\": \"%s\", \"timestamp\": \"%lld\"}", status, tv_now.tv_sec);
+        snprintf(
+            (char*)&message, sizeof(message),
+            "{\"status\": \"%s\", \"timestamp\": \"%lld\", \"uptime\": %lld}",
+            status, tv_now.tv_sec, tv_now.tv_sec - start_timestamp
+        );
 
         int ret = mqtt_publish(topic, message, /* qos */ 1, /* retain */ false);
         if (ret >= 0) {
@@ -130,6 +142,8 @@ void keypad_loop(void) {
 
 void app_main(void) {
     ESP_ERROR_CHECK(esp_event_loop_create_default());
+
+    save_start_timestamp();
 
     hardware_setup();
 
