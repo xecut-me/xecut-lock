@@ -5,6 +5,8 @@
 #include <esp_netif_sntp.h>
 #include <sys/time.h>
 
+#include "indicator.h"
+
 #define TAG "ntp"
 
 void callback(struct timeval *tv) {
@@ -14,6 +16,8 @@ void callback(struct timeval *tv) {
 
     strftime(buf, sizeof(buf), "%c", nowtm);
     ESP_LOGI(TAG, "Time synchronized successfully. Current timestamp: %s", buf);
+
+    indicator_setup_complete();
 }
 
 void ntp_init(void) {

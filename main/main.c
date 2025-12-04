@@ -162,7 +162,7 @@ void app_main(void) {
     mqtt_subscribe(MQTT_TOPIC(MQTT_DEVICE_ID, "lock"), /* qos */ 1, mqtt_lock_topic_updated);
     run_status_thread();
 
-    indicator_listen_events();
+    indicator_init();
 
     keypad_init((struct keypad_callbacks) {
         .checkin = checkin,
