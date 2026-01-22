@@ -1,9 +1,12 @@
 #!/usr/bin/env python3
 
+from datetime import datetime, timezone
+from zoneinfo import ZoneInfo
+import argparse
 import hashlib
 import sys
-import argparse
 import base64
+import struct
 
 # These values must be identical to the values from the main/otp.c file.
 KDF_ROUNDS   = 1000
@@ -16,11 +19,8 @@ def validate_uid(uid: str):
     allowed_letters_str = ', '.join(allowed_letters)
     max_len = 32
 
-    if uid.startswith('P'):
-        raise Exception(f"uid cannot start with 'P', as commands begin with that letter")
-
-    if uid.startswith('M'):
-        raise Exception(f"uid cannot start with 'M', as with prefix reserved for Decentrala members")
+    if not uid.startswith('M'):
+        raise Exception(f"uid must start with 'M'")
 
     if len(uid) > max_len:
         raise Exception(f"uid too long, max length is {max_len} chars")
@@ -28,6 +28,15 @@ def validate_uid(uid: str):
     for char in uid:
         if not char.isalnum() or (char.isalpha() and char not in allowed_letters):
             raise Exception(f"unsupported char '{char}', only 0-9 digit and {allowed_letters_str} letters are allowed")
+
+def update_kdf_with_date(kdf: bytes):
+    tz = ZoneInfo('Europe/Belgrade')
+    now = datetime.now(tz)
+
+    month = now.month
+    year = now.year-1
+
+    return kdf + struct.pack('<HI', month, year)
 
 def main():
     parser = argparse.ArgumentParser(description='Generate OTP key and otpauth URL')
@@ -40,7 +49,7 @@ def main():
         validate_uid(args.uid)
 
         with open(args.kdf_key_path, 'rb') as f:
-            kdf_key = f.read()
+            kdf_key = update_kdf_with_date(f.read())
 
         uid_bytes = args.uid.encode('utf-8')
 

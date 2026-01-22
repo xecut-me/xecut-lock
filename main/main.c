@@ -28,8 +28,13 @@
 
 time_t start_timestamp;
 
-void save_start_timestamp() {
+void save_start_timestamp(void) {
     start_timestamp = UPTIME();
+}
+
+void setup_timezone(void) {
+    setenv("TZ", "Europe/Belgrade", 1);
+    tzset();
 }
 
 bool command(const char *cmd) {
@@ -146,6 +151,7 @@ void app_main(void) {
     ESP_ERROR_CHECK(esp_event_loop_create_default());
 
     save_start_timestamp();
+    setup_timezone();
 
     hardware_setup();
 

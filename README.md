@@ -38,7 +38,7 @@ No schematic available yet, pinout is described in the [main/hardware.h](main/ha
 
 ## Running and Operation
 
-To generate an OTP key on your computer, use the `utils/get_otp.py` script:
+To generate an OTP key on your computer, use the `utils/get_otp.py` or `utils/get_decentrala_otp.py` script:
 
 ```sh
 ./utils/get_otp.py ./private/key.bin uid

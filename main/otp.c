@@ -22,8 +22,17 @@
 // Uncomment this line to get timings of otp_verify.
 // #define DEBUG_PERFORMANCE
 
-const uint8_t kdf_key[] = {
+#define DECENTRALA_PREFIX 'M'
+
+static uint8_t kdf_key[] = {
     #embed "../private/key.bin"
+};
+
+static uint8_t decentrala_kdf_key[] = {
+    #embed "../private/decentrala_key.bin"
+    ,
+    /* month */ 0x00, 0x00,
+    /* year  */ 0x00, 0x00, 0x00, 0x00
 };
 
 static uint32_t otp_truncate(const uint8_t *digest, uint8_t digits) {
@@ -70,7 +79,7 @@ static uint32_t get_otp(
     return otp_truncate(digest, OTP_DIGITS);
 };
 
-uint32_t str_to_uint32(const char *str) {
+static uint32_t str_to_uint32(const char *str) {
     uint32_t ret = 0;
     for (char chr = *str; chr != '\0'; chr = *++str) {
         ret = ret * 10 + (chr - '0');
@@ -78,11 +87,7 @@ uint32_t str_to_uint32(const char *str) {
     return ret;
 }
 
-bool otp_verify(const char *uid, const char *code) {
-#ifdef DEBUG_PERFORMANCE
-    uint64_t start = esp_timer_get_time();
-#endif
-
+static uint32_t calculate_otp(const char *uid, const uint8_t *kdf, const size_t kdf_size) {
     struct timeval tv_now;
     gettimeofday(&tv_now, NULL);
     uint64_t step = tv_now.tv_sec / OTP_TIMESTEP;
@@ -96,8 +101,44 @@ bool otp_verify(const char *uid, const char *code) {
         sizeof(otp_key), otp_key
     );
 
+    return get_otp(otp_key, sizeof(otp_key), OTP_DIGITS, step);
+}
+
+static void prepare_decentrala_kdf(void) {
+    time_t rawtime = time(NULL);
+    struct tm *timeinfo = localtime(&rawtime);
+
+    uint16_t month = timeinfo->tm_mon + 1;  // 1-12
+    uint32_t year = timeinfo->tm_year + 1900;
+
+    const size_t key_date_offset = sizeof(decentrala_kdf_key) - 6;
+
+    decentrala_kdf_key[key_date_offset + 0] = (month & 0x00FF) >> 0;
+    decentrala_kdf_key[key_date_offset + 1] = (month & 0xFF00) >> 8;
+
+    decentrala_kdf_key[key_date_offset + 2] = (year & 0x000000FF) >> 0;
+    decentrala_kdf_key[key_date_offset + 3] = (year & 0x0000FF00) >> 8;
+    decentrala_kdf_key[key_date_offset + 4] = (year & 0x00FF0000) >> 16;
+    decentrala_kdf_key[key_date_offset + 5] = (year & 0xFF000000) >> 24;
+}
+
+bool otp_verify(const char *uid, const char *code) {
+#ifdef DEBUG_PERFORMANCE
+    uint64_t start = esp_timer_get_time();
+#endif
+
+    uint8_t *kdf = kdf_key;
+    size_t kdf_size = sizeof(kdf_key);
+
+    if (*uid == DECENTRALA_PREFIX) {
+        prepare_decentrala_kdf();
+
+        kdf = decentrala_kdf_key;
+        kdf_size = sizeof(decentrala_kdf_key);
+    }
+
     uint32_t user_code = str_to_uint32(code);
-    uint32_t valid_code = get_otp(otp_key, sizeof(otp_key), OTP_DIGITS, step);
+    uint32_t valid_code = calculate_otp(uid, kdf, kdf_size);
     int is_valid = user_code == valid_code;
 
 #ifdef DEBUG_PERFORMANCE
@@ -106,8 +147,8 @@ bool otp_verify(const char *uid, const char *code) {
 #endif
 
     ESP_LOGD(
-        TAG, "Code for user '%s' for step %llu is %06d, input is %06d, otp is %s",
-        uid, step, valid_code, user_code, is_valid ? "valid" : "invalid"
+        TAG, "Code for user '%s' is %06d, input is %06d, otp is %s",
+        uid, valid_code, user_code, is_valid ? "valid" : "invalid"
     );
 
     return is_valid;
