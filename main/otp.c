@@ -94,7 +94,7 @@ static uint32_t calculate_otp(const char *uid, const uint8_t *kdf, const size_t 
     mbedtls_pkcs5_pbkdf2_hmac_ext(
         MBEDTLS_MD_SHA1,
         (const uint8_t*)uid, strlen(uid),
-        kdf_key, sizeof(kdf_key),
+        kdf, kdf_size,
         KDF_ROUNDS,
         sizeof(otp_key), otp_key
     );
