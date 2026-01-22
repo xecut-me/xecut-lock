@@ -34,7 +34,7 @@ def update_uid_with_date(uid: str):
     now = datetime.now(tz)
 
     month = now.month
-    year = now.year - 1
+    year = now.year
 
     return f"{uid}{month:02}{year:04}"
 
