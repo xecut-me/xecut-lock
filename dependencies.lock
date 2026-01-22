@@ -1,7 +1,6 @@
 dependencies:
   espressif/led_strip:
-    component_hash: 
-      f0d1b7f93eb3ee57bcfd220656176b0b5616e1947f89ed44364555cf910c4840
+    component_hash: f0d1b7f93eb3ee57bcfd220656176b0b5616e1947f89ed44364555cf910c4840
     dependencies:
     - name: idf
       require: private
@@ -11,8 +10,7 @@ dependencies:
       type: service
     version: 3.0.2
   espressif/w5500:
-    component_hash: 
-      0bfa69f4ebd57ec8554ee28f31f777f06df549dcb69f48121845402d447d077a
+    component_hash: 0bfa69f4ebd57ec8554ee28f31f777f06df549dcb69f48121845402d447d077a
     dependencies:
     - name: idf
       require: private
