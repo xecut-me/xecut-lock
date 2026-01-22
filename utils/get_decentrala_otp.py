@@ -13,30 +13,30 @@ KDF_ROUNDS   = 1000
 OTP_KEY_SIZE = 0x30
 OTP_DIGITS   = 6
 OTP_TIMESTEP = 30
+UID_MAX_LEN  = 32
 
 def validate_uid(uid: str):
     allowed_letters = ['P', 'T', 'M', 'B', 'O', 'S', 'L', 'A']
     allowed_letters_str = ', '.join(allowed_letters)
-    max_len = 32
 
     if not uid.startswith('M'):
         raise Exception(f"uid must start with 'M'")
 
-    if len(uid) > max_len:
-        raise Exception(f"uid too long, max length is {max_len} chars")
+    if len(uid) > UID_MAX_LEN:
+        raise Exception(f"uid too long, max length is {UID_MAX_LEN} chars")
 
     for char in uid:
         if not char.isalnum() or (char.isalpha() and char not in allowed_letters):
             raise Exception(f"unsupported char '{char}', only 0-9 digit and {allowed_letters_str} letters are allowed")
 
-def update_kdf_with_date(kdf: bytes):
+def update_uid_with_date(uid: str):
     tz = ZoneInfo('Europe/Belgrade')
     now = datetime.now(tz)
 
     month = now.month
-    year = now.year-1
+    year = now.year - 1
 
-    return kdf + struct.pack('<HI', month, year)
+    return f"{uid}{month:02}{year:04}"
 
 def main():
     parser = argparse.ArgumentParser(description='Generate OTP key and otpauth URL')
@@ -49,9 +49,9 @@ def main():
         validate_uid(args.uid)
 
         with open(args.kdf_key_path, 'rb') as f:
-            kdf_key = update_kdf_with_date(f.read())
+            kdf_key = f.read()
 
-        uid_bytes = args.uid.encode('utf-8')
+        uid_bytes = update_uid_with_date(args.uid).encode('utf-8')
 
         otp_key = hashlib.pbkdf2_hmac(
             'sha1',

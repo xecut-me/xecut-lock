@@ -10,11 +10,11 @@ KDF_ROUNDS   = 1000
 OTP_KEY_SIZE = 0x30
 OTP_DIGITS   = 6
 OTP_TIMESTEP = 30
+UID_MAX_LEN  = 32
 
 def validate_uid(uid: str):
     allowed_letters = ['P', 'T', 'M', 'B', 'O', 'S', 'L', 'A']
     allowed_letters_str = ', '.join(allowed_letters)
-    max_len = 32
 
     if uid.startswith('P'):
         raise Exception(f"uid cannot start with 'P', as commands begin with that letter")
@@ -22,8 +22,8 @@ def validate_uid(uid: str):
     if uid.startswith('M'):
         raise Exception(f"uid cannot start with 'M', as with prefix reserved for Decentrala members")
 
-    if len(uid) > max_len:
-        raise Exception(f"uid too long, max length is {max_len} chars")
+    if len(uid) > UID_MAX_LEN:
+        raise Exception(f"uid too long, max length is {UID_MAX_LEN} chars")
 
     for char in uid:
         if not char.isalnum() or (char.isalpha() and char not in allowed_letters):
