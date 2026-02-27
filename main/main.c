@@ -80,8 +80,6 @@ void alarm(void) {
     snprintf((char*)&message, sizeof(message), "{\"timestamp\": \"%lld\"}", tv_now.tv_sec);
 
     mqtt_publish(topic, message, /* qos */ 2, /* retain */ false);
-
-    return true;
 }
 
 void mqtt_lock_topic_updated(
