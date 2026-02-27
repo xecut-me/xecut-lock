@@ -7,6 +7,7 @@
 struct keypad_callbacks {
     bool (*command)(const char*);
     bool (*checkin)(const char*, const char*);
+    void (*alarm)(void);
 };
 
 void keypad_init(struct keypad_callbacks cb);

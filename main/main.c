@@ -70,6 +70,20 @@ bool checkin(const char *uid, const char *code) {
     return true;
 }
 
+void alarm(void) {
+    const char *topic = MQTT_TOPIC(MQTT_DEVICE_ID, "alarm");
+
+    struct timeval tv_now;
+    gettimeofday(&tv_now, NULL);
+
+    char message[256] = {0};
+    snprintf((char*)&message, sizeof(message), "{\"timestamp\": \"%lld\"}", tv_now.tv_sec);
+
+    mqtt_publish(topic, message, /* qos */ 2, /* retain */ false);
+
+    return true;
+}
+
 void mqtt_lock_topic_updated(
     const char *topic, int topic_len,
     const char *data,  int data_len
@@ -171,8 +185,9 @@ void app_main(void) {
     indicator_init();
 
     keypad_init((struct keypad_callbacks) {
-        .checkin = checkin,
         .command = command,
+        .checkin = checkin,
+        .alarm   = alarm
     });
 
     keypad_loop();

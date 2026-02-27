@@ -203,8 +203,15 @@ static enum keypad_status keypad_handle_button(char chr) {
         case KEYPAD_BTN_OFF:
         case KEYPAD_BTN_STAY:
         case KEYPAD_BTN_SLEEP:
-        case KEYPAD_BTN_ARM:
             return keypad_save_char(chr);
+
+        case KEYPAD_BTN_ARM:
+            if (keypad.state == KEYPAD_STATE_RESET) {
+                keypad.callbacks.alarm();
+                return KEYPAD_STATUS_OK;
+            } else {
+                return keypad_save_char(chr);
+            }
 
         // Someone connected via flipper and is trying to hack us!
         default:

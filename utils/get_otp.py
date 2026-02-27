@@ -19,6 +19,9 @@ def validate_uid(uid: str):
     if uid.startswith('P'):
         raise Exception(f"uid cannot start with 'P', as commands begin with that letter")
 
+    if uid.startswith('A'):
+        raise Exception(f"uid cannot start with 'A', as this button used for alarms")
+
     if uid.startswith('M'):
         raise Exception(f"uid cannot start with 'M', as with prefix reserved for Decentrala members")
 
