@@ -77,7 +77,7 @@ void alarm(void) {
     gettimeofday(&tv_now, NULL);
 
     char message[256] = {0};
-    snprintf((char*)&message, sizeof(message), "{\"timestamp\": \"%lld\"}", tv_now.tv_sec);
+    snprintf((char*)&message, sizeof(message), "{\"event\":\"alarm\",\"timestamp\": \"%lld\"}", tv_now.tv_sec);
 
     mqtt_publish(topic, message, /* qos */ 2, /* retain */ false);
 }
